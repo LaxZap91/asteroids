@@ -6,22 +6,26 @@ import "core:math/rand"
 import "core:slice"
 import rl "vendor:raylib"
 
-ASTEROID_MIN_SPEED :: 220//600
-ASTEROID_MAX_SPEED :: 220//1100
+ASTEROID_MIN_SPEED :: 400
+ASTEROID_MAX_SPEED :: 600
 ASTEROID_COLOR :: rl.WHITE
-ASTEROID_SIZE :: enum {Large, Medium, Small}
-ASTEROID_SIZE_VALUE := [ASTEROID_SIZE]f32{
-	.Large = 60,
-	.Medium = 40,
-	.Small = 20,
+ASTEROID_ROTATION_SPEED :: 5
+MAX_ASTEROIDS :: 15
+ASTEROID_SIZE :: enum {
+	Large,
+	Medium,
+	Small,
+}
+ASTEROID_SIZE_VALUE := [ASTEROID_SIZE]f32 {
+	.Large  = 60,
+	.Medium = 45,
+	.Small  = 30,
 }
 
 base_octogon := make_base_octogon()
 
 Asteroid :: struct {
-	pos:            rl.Vector2,
-	vel:            rl.Vector2,
-	angle:          f32,
+	using obj:      Object,
 	rotation_speed: f32,
 	size:           ASTEROID_SIZE,
 	base_points:    [9]rl.Vector2,
@@ -32,7 +36,8 @@ make_asteroid_rand :: proc() -> Asteroid {
 	angle := rand.float32_range(0, 2 * rl.PI)
 	speed := rand.float32_range(ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED)
 	vel := rl.Vector2Rotate(rl.Vector2{0, -1} * speed, angle)
-	rotation_speed := rand.float32_range(-5, 5) * rl.DEG2RAD
+	rotation_speed :=
+		rand.float32_range(-ASTEROID_ROTATION_SPEED, ASTEROID_ROTATION_SPEED) * rl.DEG2RAD
 	size := rand.choice_enum(ASTEROID_SIZE)
 	points := [9]rl.Vector2 {
 		base_octogon[0],
@@ -46,7 +51,7 @@ make_asteroid_rand :: proc() -> Asteroid {
 		base_octogon[0],
 	}
 
-	return {pos, vel, angle, rotation_speed, size, points}
+	return {{pos, vel, angle}, rotation_speed, size, points}
 }
 
 make_asteroid_child :: proc(asteroid: Asteroid) -> Asteroid {
@@ -54,10 +59,12 @@ make_asteroid_child :: proc(asteroid: Asteroid) -> Asteroid {
 	angle := rand.float32_range(0, 2 * rl.PI)
 	speed := rand.float32_range(ASTEROID_MIN_SPEED / 2, ASTEROID_MAX_SPEED / 2)
 	vel := rl.Vector2Rotate(rl.Vector2{0, -1} * speed, angle)
-	rotation_speed := rand.float32_range(-5, 5) * rl.DEG2RAD
+	rotation_speed :=
+		rand.float32_range(-ASTEROID_ROTATION_SPEED, ASTEROID_ROTATION_SPEED) * rl.DEG2RAD
 	size: ASTEROID_SIZE
 	if asteroid.size == .Large do size = .Medium
 	else if asteroid.size == .Medium do size = .Small
+	else if asteroid.size == .Small do size = .Small
 	points := [9]rl.Vector2 {
 		base_octogon[0],
 		base_octogon[1],
@@ -70,7 +77,7 @@ make_asteroid_child :: proc(asteroid: Asteroid) -> Asteroid {
 		base_octogon[0],
 	}
 
-	return {pos, vel, angle, rotation_speed, size, points}
+	return {{pos, vel, angle}, rotation_speed, size, points}
 }
 
 draw_asteroids :: proc(asteroids: []Asteroid) {
@@ -79,70 +86,58 @@ draw_asteroids :: proc(asteroids: []Asteroid) {
 
 	for &asteroid in asteroids_clone {
 		for &point in asteroid.base_points {
-			point = rl.Vector2Rotate(point * ASTEROID_SIZE_VALUE[asteroid.size], asteroid.angle) + asteroid.pos
+			point =
+				rl.Vector2Rotate(point * ASTEROID_SIZE_VALUE[asteroid.size], asteroid.angle) +
+				asteroid.pos
 		}
 
 		rl.DrawLineStrip(raw_data(asteroid.base_points[:]), 9, ASTEROID_COLOR)
 	}
 }
 
-check_asteroid_bullet_collision :: proc(asteroid: Asteroid, bullets: ^[dynamic]Bullet) -> bool {
+check_asteroid_bullet_collision :: proc(
+	asteroid: Asteroid,
+	bullets: ^[dynamic]Bullet,
+) -> (
+	collision: bool,
+) {
 	for bullet, i in bullets {
 		asteroid := asteroid
 		for &point in asteroid.base_points {
-			point = rl.Vector2Rotate(point * ASTEROID_SIZE_VALUE[asteroid.size], asteroid.angle) + asteroid.pos
+			point =
+				rl.Vector2Rotate(point * ASTEROID_SIZE_VALUE[asteroid.size], asteroid.angle) +
+				asteroid.pos
 		}
 
 		if rl.CheckCollisionPointPoly(bullet.pos, raw_data(asteroid.base_points[:]), 9) {
 			unordered_remove(bullets, i)
-			return true
+			collision = true
+			break
 		}
 
 	}
 
-	return false
+	return collision
 }
 
-asteroid_wrap_angle :: proc(asteroid: ^Asteroid) {
-	if asteroid.angle < -rl.PI {
-		asteroid.angle += 2 * rl.PI
-	} else if asteroid.angle > rl.PI {
-		asteroid.angle -= 2 * rl.PI
-	}
-}
-
-asteroid_wrap_position :: proc(asteroid: ^Asteroid) {
-	if asteroid.pos.x < 0 {
-		asteroid.pos.x = WINDOW_WIDTH
-	} else if asteroid.pos.x > WINDOW_WIDTH {
-		asteroid.pos.x = 0
-	}
-
-	if asteroid.pos.y < 0 {
-		asteroid.pos.y = WINDOW_HEIGHT
-	} else if asteroid.pos.y > WINDOW_HEIGHT {
-		asteroid.pos.y = 0
-	}
-}
-
-update_asteroids :: proc(asteroids: ^[dynamic]Asteroid, dt: f32, bullets: ^[dynamic]Bullet) {
+update_asteroids :: proc(
+	asteroids: ^[dynamic]Asteroid,
+	dt: f32,
+	bullets: ^[dynamic]Bullet,
+	score: ^uint,
+) {
 	for &asteroid, index in asteroids {
 		asteroid.pos += asteroid.vel * dt
 		asteroid.angle += asteroid.rotation_speed
-		asteroid_wrap_angle(&asteroid)
-		asteroid_wrap_position(&asteroid)
+		wrap_angle(&asteroid)
+		wrap_position(&asteroid)
 
-		// if asteroid.pos.x < 0 ||
-		//    asteroid.pos.x > WINDOW_WIDTH ||
-		//    asteroid.pos.y < 0 ||
-		//    asteroid.pos.y > WINDOW_HEIGHT {
-		// 	unordered_remove(asteroids, index)
-		// }
 		if check_asteroid_bullet_collision(asteroid, bullets) {
 			if asteroid.size != .Small {
 				append(asteroids, make_asteroid_child(asteroid), make_asteroid_child(asteroid))
 			}
 			unordered_remove(asteroids, index)
+			score^ += uint(ASTEROID_SIZE_VALUE[asteroid.size])
 		}
 	}
 }

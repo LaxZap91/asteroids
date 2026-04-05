@@ -3,19 +3,17 @@ package asteroids
 import rl "vendor:raylib"
 
 BULLET_SIZE :: 10
-BULLET_SPEED :: 1500
+BULLET_SPEED :: PLAYER_SPEED_CAP + 100
 BULLET_COLOR :: rl.WHITE
 
 Bullet :: struct {
-	pos:   rl.Vector2,
-	vel:   rl.Vector2,
-	angle: f32,
+	using obj: Object,
 }
 
 make_bullet :: proc(player: Player) -> Bullet {
 	pos := rl.Vector2Rotate(rl.Vector2{0, -2} * PLAYER_SCALE, player.angle) + player.pos
 	vel := rl.Vector2Rotate({0, -1} * BULLET_SPEED, player.angle)
-	return {pos, vel, player.angle}
+	return {{pos, vel, player.angle}}
 }
 
 update_bullets :: proc(bullets: ^[dynamic]Bullet, dt: f32) {
