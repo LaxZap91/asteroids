@@ -10,13 +10,46 @@ TARGET_FPS :: 60
 
 PLAYER_ROTATION_AMOUNT :: 5 * rl.DEG2RAD
 PLAYER_SCALE :: 20
-PLAYER_SPEED :: 5
+PLAYER_SPEED :: 300
 PLAYER_SPEED_CAP :: PLAYER_SPEED * 4
 
 Player :: struct {
 	pos: rl.Vector2,
 	vel: rl.Vector2,
 	angle: f32,
+}
+
+wrap_position :: proc(player: ^Player) {
+	if player.pos.x < 0 {
+		player.pos.x = WINDOW_WIDTH
+	}
+	else if player.pos.x > WINDOW_WIDTH {
+		player.pos.x = 0
+	}
+
+	if player.pos.y < 0 {
+		player.pos.y = WINDOW_HEIGHT
+	}
+	else if player.pos.y > WINDOW_HEIGHT {
+		player.pos.y = 0
+	}
+}
+
+wrap_angle :: proc(player: ^Player) {
+	if player.angle < -rl.PI {
+		player.angle += 2 * rl.PI
+	}
+	else if player.angle > rl.PI {
+		player.angle -= 2 * rl.PI
+	}
+}
+
+draw_player :: proc(player: ^Player) {
+	top := rl.Vector2Rotate(rl.Vector2{0, -2} * PLAYER_SCALE, player.angle) + player.pos
+	left := rl.Vector2Rotate(rl.Vector2{1, 2} * PLAYER_SCALE, player.angle) + player.pos
+	right := rl.Vector2Rotate(rl.Vector2{-1, 2} * PLAYER_SCALE, player.angle) + player.pos
+
+	rl.DrawTriangle(top, right, left, rl.BLUE)
 }
 
 main :: proc() {
@@ -27,9 +60,6 @@ main :: proc() {
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Asteroids")
 	rl.SetTargetFPS(TARGET_FPS)
 
-	top_base := rl.Vector2{0, -2} * PLAYER_SCALE
-	left_base := rl.Vector2{1, 2} * PLAYER_SCALE
-	right_base := rl.Vector2{-1, 2} * PLAYER_SCALE
 	vel_base := rl.Vector2{0, 1} * PLAYER_SPEED
 
 	for !rl.WindowShouldClose() {
@@ -42,16 +72,16 @@ main :: proc() {
 		if rl.IsKeyDown(.D) do player.angle += PLAYER_ROTATION_AMOUNT
 
 		player.vel = rl.Vector2ClampValue(player.vel, 0, PLAYER_SPEED_CAP)
-		player.pos += player.vel
+		player.pos += player.vel * dt
+
+		wrap_position(&player)
+		wrap_angle(&player)
 
 		// Draw
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.WHITE)
 
-		top := rl.Vector2Rotate(top_base, player.angle) + player.pos
-		left := rl.Vector2Rotate(left_base, player.angle) + player.pos
-		right := rl.Vector2Rotate(right_base, player.angle) + player.pos
-		rl.DrawTriangle(top, right, left, rl.BLUE)
+		draw_player(&player)
 
 		rl.EndDrawing()
 	}
