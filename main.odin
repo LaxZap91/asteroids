@@ -41,6 +41,7 @@ main :: proc() {
 	score: uint = 0
 
 	rl.SetTraceLogLevel(.WARNING)
+	rl.SetConfigFlags({.VSYNC_HINT})
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Asteroids")
 	rl.SetTargetFPS(TARGET_FPS)
 
