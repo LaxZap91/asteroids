@@ -92,6 +92,38 @@ draw_asteroids :: proc(asteroids: []Asteroid) {
 		}
 
 		rl.DrawLineStrip(raw_data(asteroid.base_points[:]), 9, ASTEROID_COLOR)
+
+		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			points := asteroid.base_points
+			for &point in points {
+				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 9, PLAYER_COLOR)
+		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			points := asteroid.base_points
+			for &point in points {
+				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 9, PLAYER_COLOR)
+		}
+
+		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			points := asteroid.base_points
+			for &point in points {
+				point = rl.Vector2{point.x, point.y + WINDOW_HEIGHT}
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 9, PLAYER_COLOR)
+		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			points := asteroid.base_points
+			for &point in points {
+				point = rl.Vector2{point.x, point.y - WINDOW_HEIGHT}
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 9, PLAYER_COLOR)
+		}
 	}
 }
 
