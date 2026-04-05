@@ -2,8 +2,9 @@ package asteroids
 
 import rl "vendor:raylib"
 
-BULLET_LENGTH :: 40
+BULLET_SIZE :: 10
 BULLET_SPEED :: 1500
+BULLET_COLOR :: rl.WHITE
 
 Bullet :: struct {
 	pos:   rl.Vector2,
@@ -32,11 +33,12 @@ update_bullets :: proc(bullets: ^[dynamic]Bullet, dt: f32) {
 
 draw_bullets :: proc(bullets: []Bullet) {
 	for bullet in bullets {
-		rl.DrawLineEx(
-			bullet.pos,
-			bullet.pos + (rl.Vector2Normalize(bullet.vel) * BULLET_LENGTH),
-			10,
-			rl.RED,
+		rl.DrawRectangle(
+			i32(bullet.pos.x - (BULLET_SIZE / 2)),
+			i32(bullet.pos.y - (BULLET_SIZE / 2)),
+			BULLET_SIZE,
+			BULLET_SIZE,
+			BULLET_COLOR,
 		)
 	}
 }

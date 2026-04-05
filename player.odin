@@ -6,7 +6,8 @@ PLAYER_ROTATION_AMOUNT :: 5 * rl.DEG2RAD
 PLAYER_SCALE :: 20
 PLAYER_SPEED :: 300
 PLAYER_SPEED_CAP :: PLAYER_SPEED * 4
-PLAYER_SHOOT_DELAY :: 15
+PLAYER_SHOOT_DELAY :: 10
+PLAYER_COLOR :: rl.WHITE
 
 Player :: struct {
 	pos:         rl.Vector2,
@@ -15,7 +16,7 @@ Player :: struct {
 	shoot_timer: uint,
 }
 
-wrap_position :: proc(player: ^Player) {
+player_wrap_position :: proc(player: ^Player) {
 	if player.pos.x < 0 {
 		player.pos.x = WINDOW_WIDTH
 	} else if player.pos.x > WINDOW_WIDTH {
@@ -29,7 +30,7 @@ wrap_position :: proc(player: ^Player) {
 	}
 }
 
-wrap_angle :: proc(player: ^Player) {
+player_wrap_angle :: proc(player: ^Player) {
 	if player.angle < -rl.PI {
 		player.angle += 2 * rl.PI
 	} else if player.angle > rl.PI {
@@ -48,14 +49,17 @@ update_player :: proc(player: ^Player, dt: f32) {
 		player.shoot_timer -= 1
 	}
 
-	wrap_position(player)
-	wrap_angle(player)
+	player_wrap_position(player)
+	player_wrap_angle(player)
 }
 
 draw_player :: proc(player: Player) {
 	top := rl.Vector2Rotate(rl.Vector2{0, -2} * PLAYER_SCALE, player.angle) + player.pos
 	left := rl.Vector2Rotate(rl.Vector2{1, 2} * PLAYER_SCALE, player.angle) + player.pos
 	right := rl.Vector2Rotate(rl.Vector2{-1, 2} * PLAYER_SCALE, player.angle) + player.pos
+	center := rl.Vector2Rotate(rl.Vector2{0, 1} * PLAYER_SCALE, player.angle) + player.pos
 
-	rl.DrawTriangle(top, right, left, rl.BLUE)
+	points := raw_data([]rl.Vector2{top, left, center, right, top})
+
+	rl.DrawLineStrip(points, 5, PLAYER_COLOR)
 }
