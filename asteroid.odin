@@ -11,6 +11,8 @@ ASTEROID_COLOR :: rl.WHITE
 ASTEROID_ROTATION_SPEED :: 5
 MAX_ASTEROIDS :: 15
 ASTEROID_CORNER_SIZE :: 75
+ASTEROID_POINT_EDGE_MOVE_MAX :: 0.45
+ASTEROID_POINT_EDGE_MOVE_MIN :: 0.2
 ASTEROID_SIZE :: enum {
 	Large,
 	Medium,
@@ -28,13 +30,46 @@ SIDES :: enum {
 	Right,
 }
 
-base_octogon := make_base_octogon()
+base_decagon := make_base_decagon()
 
 Asteroid :: struct {
 	using obj:      Object,
 	rotation_speed: f32,
 	size:           ASTEROID_SIZE,
-	base_points:    [9]rl.Vector2,
+	base_points:    [11]rl.Vector2,
+}
+
+make_points :: proc() -> [11]rl.Vector2 {
+	points := [11]rl.Vector2 {
+		base_decagon[0],
+		base_decagon[1],
+		base_decagon[2],
+		base_decagon[3],
+		base_decagon[4],
+		base_decagon[5],
+		base_decagon[6],
+		base_decagon[7],
+		base_decagon[8],
+		base_decagon[9],
+		base_decagon[0],
+	}
+	change_point_one := rand.uint32_range(0, 10)
+	change_point_one_move := rand.float32_range(ASTEROID_POINT_EDGE_MOVE_MIN, ASTEROID_POINT_EDGE_MOVE_MAX)
+	offset_two := rand.uint32_range(2, 4)
+	change_point_two := (change_point_one + offset_two) % 10
+	change_point_two_move := rand.float32_range(ASTEROID_POINT_EDGE_MOVE_MIN, ASTEROID_POINT_EDGE_MOVE_MAX)
+	offset_three := rand.uint32_range(4, 7)
+	change_point_three := (change_point_one + offset_three) % 10
+	change_point_three_move := rand.float32_range(ASTEROID_POINT_EDGE_MOVE_MIN, ASTEROID_POINT_EDGE_MOVE_MAX)
+
+	if change_point_one == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_one_move)
+	points[change_point_one] = rl.Vector2MoveTowards(points[change_point_one], {0, 0}, change_point_one_move)
+	if change_point_two == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_two_move)
+	points[change_point_two] = rl.Vector2MoveTowards(points[change_point_two], {0, 0}, change_point_two_move)
+	if change_point_three == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_three_move)
+	points[change_point_three] = rl.Vector2MoveTowards(points[change_point_three], {0, 0}, change_point_three_move)
+
+	return points
 }
 
 make_asteroid_rand :: proc() -> Asteroid {
@@ -68,17 +103,7 @@ make_asteroid_rand :: proc() -> Asteroid {
 	vel := rl.Vector2Rotate(rl.Vector2{0, -1} * speed, angle)
 	rotation_speed :=
 		rand.float32_range(-ASTEROID_ROTATION_SPEED, ASTEROID_ROTATION_SPEED) * rl.DEG2RAD
-	points := [9]rl.Vector2 {
-		base_octogon[0],
-		base_octogon[1],
-		base_octogon[2],
-		base_octogon[3],
-		base_octogon[4],
-		base_octogon[5],
-		base_octogon[6],
-		base_octogon[7],
-		base_octogon[0],
-	}
+	points := make_points()
 
 	return {{pos, vel, angle}, rotation_speed, size, points}
 }
@@ -94,17 +119,7 @@ make_asteroid_child :: proc(asteroid: Asteroid) -> Asteroid {
 	if asteroid.size == .Large do size = .Medium
 	else if asteroid.size == .Medium do size = .Small
 	else if asteroid.size == .Small do size = .Small
-	points := [9]rl.Vector2 {
-		base_octogon[0],
-		base_octogon[1],
-		base_octogon[2],
-		base_octogon[3],
-		base_octogon[4],
-		base_octogon[5],
-		base_octogon[6],
-		base_octogon[7],
-		base_octogon[0],
-	}
+	points := make_points()
 
 	return {{pos, vel, angle}, rotation_speed, size, points}
 }
@@ -120,7 +135,7 @@ draw_asteroids :: proc(asteroids: []Asteroid) {
 				asteroid.pos
 		}
 
-		rl.DrawLineStrip(raw_data(asteroid.base_points[:]), 9, ASTEROID_COLOR)
+		rl.DrawLineStrip(raw_data(asteroid.base_points[:]),11, ASTEROID_COLOR)
 
 		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
 			points := asteroid.base_points
@@ -128,14 +143,14 @@ draw_asteroids :: proc(asteroids: []Asteroid) {
 				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
 			}
 
-			rl.DrawLineStrip(raw_data(points[:]), 9, PLAYER_COLOR)
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
 		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
 			points := asteroid.base_points
 			for &point in points {
 				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
 			}
 
-			rl.DrawLineStrip(raw_data(points[:]), 9, PLAYER_COLOR)
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
 		}
 
 		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
@@ -144,14 +159,14 @@ draw_asteroids :: proc(asteroids: []Asteroid) {
 				point = rl.Vector2{point.x, point.y + WINDOW_HEIGHT}
 			}
 
-			rl.DrawLineStrip(raw_data(points[:]), 9, PLAYER_COLOR)
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
 		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
 			points := asteroid.base_points
 			for &point in points {
 				point = rl.Vector2{point.x, point.y - WINDOW_HEIGHT}
 			}
 
-			rl.DrawLineStrip(raw_data(points[:]), 9, PLAYER_COLOR)
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
 		}
 	}
 }
@@ -170,7 +185,7 @@ check_asteroid_bullet_collision :: proc(
 				asteroid.pos
 		}
 
-		if rl.CheckCollisionPointPoly(bullet.pos, raw_data(asteroid.base_points[:]), 9) {
+		if rl.CheckCollisionPointPoly(bullet.pos, raw_data(asteroid.base_points[:]), 11) {
 			unordered_remove(bullets, i)
 			collision = true
 			break
@@ -203,18 +218,12 @@ update_asteroids :: proc(
 	}
 }
 
-make_base_octogon :: proc "contextless" () -> (points: [8]rl.Vector2) {
-	cos_angle := math.cos_f32(22 * rl.PI / 180)
-	sin_angle := math.sin_f32(22 * rl.PI / 180)
-
-	for i in 1 ..= 8 {
-		inner := f32(i) * rl.PI / 4
+make_base_decagon :: proc "contextless" () -> (points: [10]rl.Vector2) {
+	for i in 1 ..= 10 {
+		inner := f32(i) * rl.PI / 5
 		point_cos := math.cos_f32(inner)
 		point_sin := math.sin_f32(inner)
-		point := rl.Vector2 {
-			point_cos * cos_angle - point_sin * sin_angle,
-			point_cos * sin_angle + point_sin * cos_angle,
-		}
+		point := rl.Vector2{point_cos, point_sin}
 		points[i - 1] = point
 	}
 
