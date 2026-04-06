@@ -37,7 +37,7 @@ main :: proc() {
 	asteroids := make([dynamic]Asteroid)
 	defer delete(asteroids)
 
-	asteroid_spawn_counter: uint = 100
+	asteroid_spawn_counter: uint = ASTEROID_DEFAULT_SPAWN_COUNTER
 	score: uint = 0
 
 	rl.SetTraceLogLevel(.WARNING)
@@ -62,13 +62,11 @@ main :: proc() {
 		if asteroid_spawn_counter == 0 && len(asteroids) < MAX_ASTEROIDS {
 			append(&asteroids, make_asteroid_rand())
 			asteroid_spawn_counter = uint(rand.int_range(ASTEROID_MIN_DELAY, ASTEROID_MAX_DELAY))
-		} else if asteroid_spawn_counter != 0 && len(asteroids) < MAX_ASTEROIDS do asteroid_spawn_counter -= 1
+		} else if asteroid_spawn_counter > 0 && len(asteroids) < MAX_ASTEROIDS do asteroid_spawn_counter -= 1
 
 		update_player(&player, dt)
 		update_bullets(&bullets, dt)
 		update_asteroids(&asteroids, dt, &bullets, &score)
-
-		shrink(&asteroids)
 
 		score_text := strings.clone_to_cstring(
 			fmt.aprintf("Score: %v", score, allocator = context.temp_allocator),

@@ -8,6 +8,9 @@ PLAYER_SPEED :: 60
 PLAYER_SPEED_CAP :: PLAYER_SPEED * 35
 PLAYER_SHOOT_DELAY :: 15
 PLAYER_COLOR :: rl.WHITE
+PLAYER_HEIGHT :: 4
+PLAYER_WIDTH :: 2
+PLAYER_CENTER_HEIGHT :: 3
 
 Player :: struct {
 	using obj:   Object,
@@ -30,10 +33,10 @@ update_player :: proc(player: ^Player, dt: f32) {
 }
 
 draw_player :: proc(player: Player) {
-	top := rl.Vector2Rotate(rl.Vector2{0, -2} * PLAYER_SCALE, player.angle) + player.pos
-	left := rl.Vector2Rotate(rl.Vector2{1, 2} * PLAYER_SCALE, player.angle) + player.pos
-	right := rl.Vector2Rotate(rl.Vector2{-1, 2} * PLAYER_SCALE, player.angle) + player.pos
-	center := rl.Vector2Rotate(rl.Vector2{0, 1} * PLAYER_SCALE, player.angle) + player.pos
+	top := rl.Vector2Rotate(rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) + player.pos
+	left := rl.Vector2Rotate(rl.Vector2{PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) + player.pos
+	right := rl.Vector2Rotate(rl.Vector2{-PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) + player.pos
+	center := rl.Vector2Rotate(rl.Vector2{0, PLAYER_HEIGHT / PLAYER_CENTER_HEIGHT} * PLAYER_SCALE, player.angle) + player.pos
 
 	rl.DrawLineStrip(raw_data([]rl.Vector2{top, left, center, right, top}), 5, PLAYER_COLOR)
 

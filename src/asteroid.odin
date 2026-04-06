@@ -15,6 +15,10 @@ MAX_ASTEROIDS :: 15
 ASTEROID_CORNER_SIZE :: 75
 ASTEROID_POINT_EDGE_MOVE_MAX :: 0.45
 ASTEROID_POINT_EDGE_MOVE_MIN :: 0.2
+OFFSET_MIN :: 2
+ASTEROID_DEFAULT_SPAWN_COUNTER :: 100
+OFFSET_CENTER :: 4
+OFFSET_MAX :: 8
 ASTEROID_SIZE :: enum {
 	Large,
 	Medium,
@@ -56,20 +60,45 @@ make_points :: proc() -> [11]rl.Vector2 {
 		base_decagon[0],
 	}
 	change_point_one := rand.uint32_range(0, 10)
-	change_point_one_move := rand.float32_range(ASTEROID_POINT_EDGE_MOVE_MIN, ASTEROID_POINT_EDGE_MOVE_MAX)
-	offset_two := rand.uint32_range(2, 4)
+	change_point_one_move := rand.float32_range(
+		ASTEROID_POINT_EDGE_MOVE_MIN,
+		ASTEROID_POINT_EDGE_MOVE_MAX,
+	)
+
+	offset_two := rand.uint32_range(OFFSET_MIN, OFFSET_CENTER)
 	change_point_two := (change_point_one + offset_two) % 10
-	change_point_two_move := rand.float32_range(ASTEROID_POINT_EDGE_MOVE_MIN, ASTEROID_POINT_EDGE_MOVE_MAX)
-	offset_three := rand.uint32_range(4, 7)
+	change_point_two_move := rand.float32_range(
+		ASTEROID_POINT_EDGE_MOVE_MIN,
+		ASTEROID_POINT_EDGE_MOVE_MAX,
+	)
+
+	offset_three := rand.uint32_range(OFFSET_CENTER, OFFSET_MAX)
 	change_point_three := (change_point_one + offset_three) % 10
-	change_point_three_move := rand.float32_range(ASTEROID_POINT_EDGE_MOVE_MIN, ASTEROID_POINT_EDGE_MOVE_MAX)
+	change_point_three_move := rand.float32_range(
+		ASTEROID_POINT_EDGE_MOVE_MIN,
+		ASTEROID_POINT_EDGE_MOVE_MAX,
+	)
 
 	if change_point_one == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_one_move)
-	points[change_point_one] = rl.Vector2MoveTowards(points[change_point_one], {0, 0}, change_point_one_move)
+	points[change_point_one] = rl.Vector2MoveTowards(
+		points[change_point_one],
+		{0, 0},
+		change_point_one_move,
+	)
+
 	if change_point_two == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_two_move)
-	points[change_point_two] = rl.Vector2MoveTowards(points[change_point_two], {0, 0}, change_point_two_move)
+	points[change_point_two] = rl.Vector2MoveTowards(
+		points[change_point_two],
+		{0, 0},
+		change_point_two_move,
+	)
+
 	if change_point_three == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_three_move)
-	points[change_point_three] = rl.Vector2MoveTowards(points[change_point_three], {0, 0}, change_point_three_move)
+	points[change_point_three] = rl.Vector2MoveTowards(
+		points[change_point_three],
+		{0, 0},
+		change_point_three_move,
+	)
 
 	return points
 }
@@ -115,20 +144,21 @@ make_asteroid_child :: proc(asteroid: Asteroid) -> Asteroid {
 	angle := rand.float32_range(0, 2 * rl.PI)
 	speed := rand.float32_range(ASTEROID_MIN_SPEED / 2, ASTEROID_MAX_SPEED / 2)
 	vel := rl.Vector2Rotate(rl.Vector2{0, -1} * speed, angle)
-	rotation_speed :=
-		rand.float32_range(-ASTEROID_ROTATION_SPEED, ASTEROID_ROTATION_SPEED) * rl.DEG2RAD
+
 	size: ASTEROID_SIZE
 	if asteroid.size == .Large do size = .Medium
 	else if asteroid.size == .Medium do size = .Small
 	else if asteroid.size == .Small do size = .Small
+
+	rotation_speed :=
+		rand.float32_range(-ASTEROID_ROTATION_SPEED, ASTEROID_ROTATION_SPEED) * rl.DEG2RAD
 	points := make_points()
 
 	return {{pos, vel, angle}, rotation_speed, size, points}
 }
 
 draw_asteroids :: proc(asteroids: []Asteroid) {
-	asteroids_clone := slice.clone(asteroids)
-	defer delete(asteroids_clone)
+	asteroids_clone := slice.clone(asteroids, context.temp_allocator)
 
 	for &asteroid in asteroids_clone {
 		for &point in asteroid.base_points {
@@ -137,7 +167,7 @@ draw_asteroids :: proc(asteroids: []Asteroid) {
 				asteroid.pos
 		}
 
-		rl.DrawLineStrip(raw_data(asteroid.base_points[:]),11, ASTEROID_COLOR)
+		rl.DrawLineStrip(raw_data(asteroid.base_points[:]), 11, ASTEROID_COLOR)
 
 		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
 			points := asteroid.base_points
@@ -218,6 +248,8 @@ update_asteroids :: proc(
 			score^ += uint(ASTEROID_SIZE_VALUE[asteroid.size])
 		}
 	}
+
+	shrink(asteroids)
 }
 
 make_base_decagon :: proc "contextless" () -> (points: [10]rl.Vector2) {
