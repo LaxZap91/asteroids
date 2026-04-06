@@ -61,7 +61,7 @@ main :: proc() {
 
 		if asteroid_spawn_counter == 0 && len(asteroids) < MAX_ASTEROIDS {
 			append(&asteroids, make_asteroid_rand())
-			asteroid_spawn_counter = uint(rand.int_range(50, 90))
+			asteroid_spawn_counter = uint(rand.int_range(ASTEROID_MIN_DELAY, ASTEROID_MAX_DELAY))
 		} else if asteroid_spawn_counter != 0 && len(asteroids) < MAX_ASTEROIDS do asteroid_spawn_counter -= 1
 
 		update_player(&player, dt)

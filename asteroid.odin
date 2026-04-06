@@ -9,6 +9,8 @@ ASTEROID_MIN_SPEED :: 400
 ASTEROID_MAX_SPEED :: 600
 ASTEROID_COLOR :: rl.WHITE
 ASTEROID_ROTATION_SPEED :: 5
+ASTEROID_MIN_DELAY :: 90
+ASTEROID_MAX_DELAY :: 150
 MAX_ASTEROIDS :: 15
 ASTEROID_CORNER_SIZE :: 75
 ASTEROID_POINT_EDGE_MOVE_MAX :: 0.45
@@ -85,7 +87,7 @@ make_asteroid_rand :: proc() -> Asteroid {
 		angle = rand.float32_range(-135 * rl.DEG2RAD, 135 * rl.DEG2RAD)
 	} else if side == .Bottom {
 		x := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_WIDTH - ASTEROID_CORNER_SIZE)
-		y := WINDOW_HEIGHT - ASTEROID_SIZE_VALUE[size]
+		y := WINDOW_HEIGHT + ASTEROID_SIZE_VALUE[size]
 		pos = {x, y}
 		angle = rand.float32_range(-45 * rl.DEG2RAD, 45 * rl.DEG2RAD)
 	} else if side == .Left {
@@ -94,7 +96,7 @@ make_asteroid_rand :: proc() -> Asteroid {
 		pos = {x, y}
 		angle = rand.float32_range(45 * rl.DEG2RAD, 135 * rl.DEG2RAD)
 	} else if side == .Right {
-		x := WINDOW_HEIGHT - ASTEROID_SIZE_VALUE[size]
+		x := WINDOW_HEIGHT + ASTEROID_SIZE_VALUE[size]
 		y := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_HEIGHT - ASTEROID_CORNER_SIZE)
 		pos = {x, y}
 		angle = rand.float32_range(-135 * rl.DEG2RAD, -45 * rl.DEG2RAD)
