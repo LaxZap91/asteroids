@@ -1,25 +1,34 @@
 package asteroids
 
+import "core:slice"
 import rl "vendor:raylib"
 
-BULLET_SIZE :: 10
+// Speed that the bullet moves
 BULLET_SPEED :: PLAYER_SPEED_CAP + 100
+// Color of the bullet sprite
 BULLET_COLOR :: rl.WHITE
+// Size of the bullet sprite
+BULLET_SIZE :: 10
 
 Bullet :: struct {
 	using obj: Object,
 }
 
+// Creates a bullet
 make_bullet :: proc(player: Player) -> Bullet {
-	pos := rl.Vector2Rotate(rl.Vector2{0, -2} * PLAYER_SCALE, player.angle) + player.pos
+	pos :=
+		rl.Vector2Rotate(rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) +
+		player.pos
 	vel := rl.Vector2Rotate({0, -1} * BULLET_SPEED, player.angle)
 	return {{pos, vel, player.angle}}
 }
 
+// Updates bullets
 update_bullets :: proc(bullets: ^[dynamic]Bullet, dt: f32) {
 	for &bullet, index in bullets {
 		bullet.pos += bullet.vel * dt
 
+		// Remove if off screen
 		if bullet.pos.x < 0 ||
 		   bullet.pos.x > WINDOW_WIDTH ||
 		   bullet.pos.y < 0 ||
@@ -29,6 +38,7 @@ update_bullets :: proc(bullets: ^[dynamic]Bullet, dt: f32) {
 	}
 }
 
+// Draws bullet sprite
 draw_bullets :: proc(bullets: []Bullet) {
 	for bullet in bullets {
 		rl.DrawRectangle(

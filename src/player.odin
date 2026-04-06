@@ -2,25 +2,34 @@ package asteroids
 
 import rl "vendor:raylib"
 
+// Increment that the player angle rotates by
 PLAYER_ROTATION_AMOUNT :: 5 * rl.DEG2RAD
-PLAYER_SCALE :: 20
+// Increment that the player speed increases by
 PLAYER_SPEED :: 60
+// Max speed for the player
 PLAYER_SPEED_CAP :: PLAYER_SPEED * 35
+// Frames between shots
 PLAYER_SHOOT_DELAY :: 15
-PLAYER_COLOR :: rl.WHITE
+// Size multiplication of the player spite
+PLAYER_SCALE :: 20
+// Height of the player sprite
 PLAYER_HEIGHT :: 4
+// Width of the player sprite
 PLAYER_WIDTH :: 2
-PLAYER_CENTER_HEIGHT :: 3
+// Color of the player sprite
+PLAYER_COLOR :: rl.WHITE
 
 Player :: struct {
 	using obj:   Object,
 	shoot_timer: uint,
 }
 
+// Forces the maximum speed of the player to be PLAYER_SPEED_CAP
 clamp_speed :: proc(player: ^Player) {
 	player.vel = rl.Vector2ClampValue(player.vel, 0, PLAYER_SPEED_CAP)
 }
 
+// Updates the player
 update_player :: proc(player: ^Player, dt: f32) {
 	clamp_speed(player)
 	player.pos += player.vel * dt
@@ -32,14 +41,36 @@ update_player :: proc(player: ^Player, dt: f32) {
 	wrap_angle(player)
 }
 
+// Draws the player sprite
 draw_player :: proc(player: Player) {
-	top := rl.Vector2Rotate(rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) + player.pos
-	left := rl.Vector2Rotate(rl.Vector2{PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) + player.pos
-	right := rl.Vector2Rotate(rl.Vector2{-PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) + player.pos
-	center := rl.Vector2Rotate(rl.Vector2{0, PLAYER_HEIGHT / PLAYER_CENTER_HEIGHT} * PLAYER_SCALE, player.angle) + player.pos
+	// Player sprite point positions
+	top :=
+		rl.Vector2Rotate(rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) +
+		player.pos
+	left :=
+		rl.Vector2Rotate(
+			rl.Vector2{PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE,
+			player.angle,
+		) +
+		player.pos
+	right :=
+		rl.Vector2Rotate(
+			rl.Vector2{-PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE,
+			player.angle,
+		) +
+		player.pos
+	center :=
+		rl.Vector2Rotate(rl.Vector2{0, PLAYER_HEIGHT / 4} * PLAYER_SCALE, player.angle) +
+		player.pos
 
 	rl.DrawLineStrip(raw_data([]rl.Vector2{top, left, center, right, top}), 5, PLAYER_COLOR)
 
+	draw_player_wrapping(player, top, left, right, center)
+}
+
+// Draws the player sprite wrapping around screen edges
+draw_player_wrapping :: proc(player: Player, top, left, right, center: rl.Vector2) {
+	// Draws player sprite wapping around x-axis
 	if player.pos.x < PLAYER_SCALE * 2 {
 		top := rl.Vector2{top.x + WINDOW_WIDTH, top.y}
 		left := rl.Vector2{left.x + WINDOW_WIDTH, left.y}
@@ -56,6 +87,7 @@ draw_player :: proc(player: Player) {
 		rl.DrawLineStrip(raw_data([]rl.Vector2{top, left, center, right, top}), 5, PLAYER_COLOR)
 	}
 
+	// Draws player sprite wapping around y-axis
 	if player.pos.y < PLAYER_SCALE * 2 {
 		top := rl.Vector2{top.x, top.y + WINDOW_HEIGHT}
 		left := rl.Vector2{left.x, left.y + WINDOW_HEIGHT}

@@ -5,37 +5,51 @@ import "core:math/rand"
 import "core:slice"
 import rl "vendor:raylib"
 
-ASTEROID_MIN_SPEED :: 400
-ASTEROID_MAX_SPEED :: 600
-ASTEROID_COLOR :: rl.WHITE
-ASTEROID_ROTATION_SPEED :: 5
-ASTEROID_MIN_DELAY :: 90
-ASTEROID_MAX_DELAY :: 150
-MAX_ASTEROIDS :: 15
-ASTEROID_CORNER_SIZE :: 75
-ASTEROID_POINT_EDGE_MOVE_MAX :: 0.45
-ASTEROID_POINT_EDGE_MOVE_MIN :: 0.2
-OFFSET_MIN :: 2
+// Starting deley before first asteroid
 ASTEROID_DEFAULT_SPAWN_COUNTER :: 100
-OFFSET_CENTER :: 4
-OFFSET_MAX :: 8
+// Minimum delay between asteroids
+ASTEROID_MIN_DELAY :: 90
+// Maximum delay between asteroids
+ASTEROID_MAX_DELAY :: 150
+// Maximum number of asteroids on screen
+MAX_ASTEROIDS :: 15
+// Border between corner that asteroids spawn in
+ASTEROID_CORNER_SIZE :: 75
+// Minimum speed that an asteroid can move at
+ASTEROID_MIN_SPEED :: 400
+// Maximum speed that an asteroid can move at
+ASTEROID_MAX_SPEED :: 600
+// Absolute value of range of values that an asteroid can
+// rotate at
+ASTEROID_ROTATION_SPEED :: 5
+// Asteroid sizes
 ASTEROID_SIZE :: enum {
 	Large,
 	Medium,
 	Small,
 }
+// Asteroid scale sizes
 ASTEROID_SIZE_VALUE := [ASTEROID_SIZE]f32 {
 	.Large  = 60,
 	.Medium = 45,
 	.Small  = 30,
 }
-SIDES :: enum {
-	Top,
-	Bottom,
-	Left,
-	Right,
-}
+// Maximum distance points will move if they are
+// chosen to change
+ASTEROID_POINT_EDGE_MOVE_MAX :: 0.45
+// Minimum distance points will move if they are
+// chosen to change
+ASTEROID_POINT_EDGE_MOVE_MIN :: 0.2
+// Minimum offset of asteroid choise position
+OFFSET_MIN :: 2
+// Central offset of asteroid choise position
+OFFSET_CENTER :: 4
+// Maximum offset of asteroid choise position
+OFFSET_MAX :: 8
+// Color of asteroid sprite
+ASTEROID_COLOR :: rl.WHITE
 
+// Normal decagon
 base_decagon := make_base_decagon()
 
 Asteroid :: struct {
@@ -45,7 +59,9 @@ Asteroid :: struct {
 	base_points:    [11]rl.Vector2,
 }
 
+// Makes points for an asteroid
 make_points :: proc() -> [11]rl.Vector2 {
+	// Initial positions
 	points := [11]rl.Vector2 {
 		base_decagon[0],
 		base_decagon[1],
@@ -103,12 +119,21 @@ make_points :: proc() -> [11]rl.Vector2 {
 	return points
 }
 
+// Makes an asteroid that spawns from the edge of the screen
 make_asteroid_rand :: proc() -> Asteroid {
+	SIDES :: enum {
+		Top,
+		Bottom,
+		Left,
+		Right,
+	}
+
 	pos: rl.Vector2
 	angle: f32
 	speed := rand.float32_range(ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED)
 	size := rand.choice_enum(ASTEROID_SIZE)
 
+	// Generates position based on which side the asteroid spawns on
 	if side := rand.choice_enum(SIDES); side == .Top {
 		x := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_WIDTH - ASTEROID_CORNER_SIZE)
 		y := -ASTEROID_SIZE_VALUE[size]
@@ -139,6 +164,7 @@ make_asteroid_rand :: proc() -> Asteroid {
 	return {{pos, vel, angle}, rotation_speed, size, points}
 }
 
+// Generates an smaller asteroid based on an existing asteroid
 make_asteroid_child :: proc(asteroid: Asteroid) -> Asteroid {
 	pos := asteroid.pos
 	angle := rand.float32_range(0, 2 * rl.PI)
@@ -157,6 +183,7 @@ make_asteroid_child :: proc(asteroid: Asteroid) -> Asteroid {
 	return {{pos, vel, angle}, rotation_speed, size, points}
 }
 
+// Draws asteroid sprites
 draw_asteroids :: proc(asteroids: []Asteroid) {
 	asteroids_clone := slice.clone(asteroids, context.temp_allocator)
 
@@ -169,40 +196,48 @@ draw_asteroids :: proc(asteroids: []Asteroid) {
 
 		rl.DrawLineStrip(raw_data(asteroid.base_points[:]), 11, ASTEROID_COLOR)
 
-		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
-			points := asteroid.base_points
-			for &point in points {
-				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
-			}
-
-			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
-		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
-			points := asteroid.base_points
-			for &point in points {
-				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
-			}
-
-			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
-		}
-
-		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
-			points := asteroid.base_points
-			for &point in points {
-				point = rl.Vector2{point.x, point.y + WINDOW_HEIGHT}
-			}
-
-			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
-		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
-			points := asteroid.base_points
-			for &point in points {
-				point = rl.Vector2{point.x, point.y - WINDOW_HEIGHT}
-			}
-
-			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
-		}
+		draw_asteroids_wrapping(asteroid)
 	}
 }
 
+// Draws the asteroid sprite wrapping around screen edges
+draw_asteroids_wrapping :: proc(asteroid: Asteroid) {
+	// Draws asteroid sprite wapping around x-axis
+	if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+		points := asteroid.base_points
+		for &point in points {
+			point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
+		}
+
+		rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+	} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+		points := asteroid.base_points
+		for &point in points {
+			point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
+		}
+
+		rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+	}
+
+	// Draws asteroid sprite wapping around x-axis
+	if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+		points := asteroid.base_points
+		for &point in points {
+			point = rl.Vector2{point.x, point.y + WINDOW_HEIGHT}
+		}
+
+		rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+	} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+		points := asteroid.base_points
+		for &point in points {
+			point = rl.Vector2{point.x, point.y - WINDOW_HEIGHT}
+		}
+
+		rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+	}
+}
+
+// Checks if an asteroid is colliding with a bullet
 check_asteroid_bullet_collision :: proc(
 	asteroid: Asteroid,
 	bullets: ^[dynamic]Bullet,
@@ -228,6 +263,7 @@ check_asteroid_bullet_collision :: proc(
 	return collision
 }
 
+// Updates bullets
 update_asteroids :: proc(
 	asteroids: ^[dynamic]Asteroid,
 	dt: f32,
@@ -252,6 +288,7 @@ update_asteroids :: proc(
 	shrink(asteroids)
 }
 
+// Creates a normal decagon
 make_base_decagon :: proc "contextless" () -> (points: [10]rl.Vector2) {
 	for i in 1 ..= 10 {
 		inner := f32(i) * rl.PI / 5

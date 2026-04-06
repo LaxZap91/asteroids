@@ -6,9 +6,14 @@ import "core:mem"
 import "core:strings"
 import rl "vendor:raylib"
 
+// Width of the game window
 WINDOW_WIDTH :: 2000
+// Height of the game window
 WINDOW_HEIGHT :: 2000
+// Target fps of the game
 TARGET_FPS :: 60
+
+// Font size of the score text
 SCORE_TEXT_SIZE :: 50
 
 main :: proc() {
@@ -28,6 +33,7 @@ main :: proc() {
 		}
 	}
 
+	// Initialize game variables
 	player: Player
 	player.pos = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}
 
@@ -40,15 +46,17 @@ main :: proc() {
 	asteroid_spawn_counter: uint = ASTEROID_DEFAULT_SPAWN_COUNTER
 	score: uint = 0
 
+	// Initialize raylib window
 	rl.SetTraceLogLevel(.WARNING)
 	rl.SetConfigFlags({.VSYNC_HINT})
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Asteroids")
 	rl.SetTargetFPS(TARGET_FPS)
 
+	// Game loop
 	for !rl.WindowShouldClose() {
 		dt := rl.GetFrameTime()
 
-		// Update
+		// Get keyboard input
 		if rl.IsKeyDown(.W) do player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, player.angle)
 		// if rl.IsKeyDown(.S) do player.vel = rl.Vector2MoveTowards(player.vel, {0, 0}, PLAYER_SPEED / 3)
 		if rl.IsKeyDown(.A) do player.angle -= PLAYER_ROTATION_AMOUNT
@@ -58,7 +66,7 @@ main :: proc() {
 			player.shoot_timer = PLAYER_SHOOT_DELAY
 		}
 
-
+		// Update game objects
 		if asteroid_spawn_counter == 0 && len(asteroids) < MAX_ASTEROIDS {
 			append(&asteroids, make_asteroid_rand())
 			asteroid_spawn_counter = uint(rand.int_range(ASTEROID_MIN_DELAY, ASTEROID_MAX_DELAY))
@@ -73,7 +81,7 @@ main :: proc() {
 			context.temp_allocator,
 		)
 
-		// Draw
+		// Draw game
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
 
