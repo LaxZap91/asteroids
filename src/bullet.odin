@@ -1,6 +1,5 @@
 package asteroids
 
-import "core:slice"
 import rl "vendor:raylib"
 
 // Speed that the bullet moves

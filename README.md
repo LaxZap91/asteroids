@@ -10,5 +10,6 @@ The classic asteroids game, written in the odin programming language
 
 ## TODO
 
-- ADD asteroid destruction particles
+- ADD player destruction particles
+- ADD lives system
 - ADD asteroid shape variety

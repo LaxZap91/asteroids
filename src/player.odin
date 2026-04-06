@@ -1,6 +1,5 @@
 package asteroids
 
-import "core:fmt"
 import rl "vendor:raylib"
 
 // Increment that the player angle rotates by
@@ -85,6 +84,7 @@ update_player :: proc(player: ^Player, dt: f32, asteroids: []Asteroid) {
 	if player.state == .Dead {
 		player.pos = {-100, -100}
 		player.vel = {0, 0}
+		player.shoot_timer = 1;
 	}
 }
 

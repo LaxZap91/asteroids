@@ -57,6 +57,9 @@ main :: proc() {
 	asteroids := make([dynamic]Asteroid)
 	defer delete(asteroids)
 
+	particles := make([dynamic]Particle)
+	defer delete(particles)
+
 	menu_asteroids: [MAX_ASTEROIDS]Asteroid
 	for i in 0 ..< MAX_ASTEROIDS {
 		menu_asteroids[i] = make_asteroid_rand()
@@ -64,6 +67,7 @@ main :: proc() {
 
 	asteroid_spawn_counter: uint = ASTEROID_DEFAULT_SPAWN_COUNTER
 	score: uint = 0
+	restart_delay: uint = 0
 
 	// Initialize raylib window
 	rl.SetTraceLogLevel(.WARNING)
@@ -77,18 +81,30 @@ main :: proc() {
 
 		// Update game
 		if game_state == .GAME {
-			update_game(&player, &bullets, &asteroids, &asteroid_spawn_counter, &score, dt)
 			if player.state == .Dead {
 				game_state = .MENU
 				if score > high_score do high_score = score
 				score = 0
+				restart_delay = 50
 			}
-		} else {
-			if rl.IsKeyDown(.SPACE) {
-				game_state = .GAME
 
-				reset_game(&player, &bullets, &asteroids, &asteroid_spawn_counter)
-			}
+			update_game(
+				&player,
+				&bullets,
+				&asteroids,
+				&particles,
+				&asteroid_spawn_counter,
+				&score,
+				dt,
+			)
+		} else {
+			if restart_delay == 0  {
+				if rl.IsKeyDown(.SPACE) {
+					game_state = .GAME
+
+					reset_game(&player, &bullets, &asteroids, &particles, &asteroid_spawn_counter)
+				}
+			} else if restart_delay > 0 do restart_delay -= 1
 
 			update_menu_asteroids(menu_asteroids[:], dt)
 		}
@@ -98,7 +114,7 @@ main :: proc() {
 
 		// Draw game
 		if game_state == .GAME {
-			draw_game(player, bullets[:], asteroids[:], score)
+			draw_game(player, bullets[:], asteroids[:], particles[:], score)
 		} else {
 			draw_asteroids(menu_asteroids[:])
 			draw_menu(high_score)
@@ -117,6 +133,7 @@ update_game :: proc(
 	player: ^Player,
 	bullets: ^[dynamic]Bullet,
 	asteroids: ^[dynamic]Asteroid,
+	particles: ^[dynamic]Particle,
 	asteroid_spawn_counter: ^uint,
 	score: ^uint,
 	dt: f32,
@@ -141,14 +158,22 @@ update_game :: proc(
 
 	update_player(player, dt, asteroids[:])
 	update_bullets(bullets, dt)
-	update_asteroids(asteroids, dt, bullets, score)
+	update_asteroids(asteroids, dt, bullets, particles, score)
+	update_particles(particles, dt)
 }
 
 // Draws the game
-draw_game :: proc(player: Player, bullets: []Bullet, asteroids: []Asteroid, score: uint) {
+draw_game :: proc(
+	player: Player,
+	bullets: []Bullet,
+	asteroids: []Asteroid,
+	particles: []Particle,
+	score: uint,
+) {
 	draw_player(player)
 	draw_bullets(bullets)
 	draw_asteroids(asteroids)
+	draw_particles(particles)
 
 	score_text := strings.clone_to_cstring(
 		fmt.aprintf("Score: %v", score, allocator = context.temp_allocator),
@@ -199,12 +224,14 @@ reset_game :: proc(
 	player: ^Player,
 	bullets: ^[dynamic]Bullet,
 	asteroids: ^[dynamic]Asteroid,
+	particles: ^[dynamic]Particle,
 	asteroid_spawn_counter: ^uint,
 ) {
 	// Resets player
 	player.pos = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}
 	player.vel = {0, 0}
 	player.angle = 0
+	player.shoot_timer = 0
 	player.state = .Alive
 
 	// Resets bullets
@@ -215,4 +242,8 @@ reset_game :: proc(
 	clear(asteroids)
 	shrink(asteroids)
 	asteroid_spawn_counter^ = 100
+
+	// Resets particles
+	clear(particles)
+	shrink(particles)
 }

@@ -20,6 +20,8 @@ ASTEROID_CORNER_SIZE :: 75
 ASTEROID_MIN_SPEED :: 400
 // Maximum speed that an asteroid can move at
 ASTEROID_MAX_SPEED :: 600
+// Number of particles to spawn on destruction
+ASTEROID_PARTICLE_COUNT :: 30
 // Absolute value of range of values that an asteroid can
 // rotate at
 ASTEROID_ROTATION_SPEED :: 5
@@ -264,11 +266,18 @@ check_asteroid_bullet_collision :: proc(
 	return collision
 }
 
+make_asteroid_particles :: proc(particles: ^[dynamic]Particle, asteroid: Asteroid) {
+	for _ in 0..<ASTEROID_PARTICLE_COUNT {
+		append(particles, make_particle(asteroid.pos, ASTEROID_SIZE_VALUE[asteroid.size]))
+	}
+}
+
 // Updates asteroids
 update_asteroids :: proc(
 	asteroids: ^[dynamic]Asteroid,
 	dt: f32,
 	bullets: ^[dynamic]Bullet,
+	particles: ^[dynamic]Particle,
 	score: ^uint,
 ) {
 	remove_indices := make([dynamic]uint, context.temp_allocator)
@@ -280,6 +289,7 @@ update_asteroids :: proc(
 		wrap_position(&asteroid)
 
 		if check_asteroid_bullet_collision(asteroid, bullets) {
+			make_asteroid_particles(particles, asteroid)
 			if asteroid.size != .Small {
 				append(asteroids, make_asteroid_child(asteroid), make_asteroid_child(asteroid))
 			}
