@@ -1,5 +1,6 @@
 package asteroids
 
+import "core:fmt"
 import rl "vendor:raylib"
 
 // Increment that the player angle rotates by
@@ -18,10 +19,16 @@ PLAYER_HEIGHT :: 4
 PLAYER_WIDTH :: 2
 // Color of the player sprite
 PLAYER_COLOR :: rl.WHITE
+// State of the player
+PLAYER_STATE :: enum {
+	Alive,
+	Dead,
+}
 
 Player :: struct {
 	using obj:   Object,
 	shoot_timer: uint,
+	state:       PLAYER_STATE,
 }
 
 // Forces the maximum speed of the player to be PLAYER_SPEED_CAP
@@ -29,8 +36,41 @@ clamp_speed :: proc(player: ^Player) {
 	player.vel = rl.Vector2ClampValue(player.vel, 0, PLAYER_SPEED_CAP)
 }
 
+check_player_asteroid_collision :: proc(player: ^Player, asteroids: []Asteroid) {
+	top :=
+		rl.Vector2Rotate(rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) +
+		player.pos
+	left :=
+		rl.Vector2Rotate(
+			rl.Vector2{PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE,
+			player.angle,
+		) +
+		player.pos
+	right :=
+		rl.Vector2Rotate(
+			rl.Vector2{-PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE,
+			player.angle,
+		) +
+		player.pos
+
+	for asteroid, i in asteroids {
+		asteroid := asteroid
+		for &point in asteroid.base_points {
+			point =
+				rl.Vector2Rotate(point * ASTEROID_SIZE_VALUE[asteroid.size], asteroid.angle) +
+				asteroid.pos
+		}
+
+		if rl.CheckCollisionPointPoly(top, raw_data(asteroid.base_points[:]), 11) ||
+		   rl.CheckCollisionPointPoly(left, raw_data(asteroid.base_points[:]), 11) ||
+		   rl.CheckCollisionPointPoly(right, raw_data(asteroid.base_points[:]), 11) {
+			player.state = .Dead
+		}
+	}
+}
+
 // Updates the player
-update_player :: proc(player: ^Player, dt: f32) {
+update_player :: proc(player: ^Player, dt: f32, asteroids: []Asteroid) {
 	clamp_speed(player)
 	player.pos += player.vel * dt
 	if player.shoot_timer > 0 {
@@ -39,6 +79,13 @@ update_player :: proc(player: ^Player, dt: f32) {
 
 	wrap_position(player)
 	wrap_angle(player)
+
+	check_player_asteroid_collision(player, asteroids)
+
+	if player.state == .Dead {
+		player.pos = {-100, -100}
+		player.vel = {0, 0}
+	}
 }
 
 // Draws the player sprite

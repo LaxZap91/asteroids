@@ -12,6 +12,3 @@ The classic asteroids game, written in the odin programming language
 
 - ADD asteroid destruction particles
 - ADD asteroid shape variety
-- ADD death & lives
-- ADD start menu
-- ADD high score

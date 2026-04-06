@@ -1,5 +1,6 @@
 package asteroids
 
+import "core:fmt"
 import "core:math"
 import "core:math/rand"
 import "core:slice"
@@ -213,7 +214,7 @@ draw_asteroids_wrapping :: proc(asteroid: Asteroid) {
 	} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
 		points := asteroid.base_points
 		for &point in points {
-			point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
+			point = rl.Vector2{point.x - WINDOW_WIDTH, point.y}
 		}
 
 		rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
@@ -270,6 +271,8 @@ update_asteroids :: proc(
 	bullets: ^[dynamic]Bullet,
 	score: ^uint,
 ) {
+	remove_indices := make([dynamic]uint, context.temp_allocator)
+
 	for &asteroid, index in asteroids {
 		asteroid.pos += asteroid.vel * dt
 		asteroid.angle += asteroid.rotation_speed
@@ -280,9 +283,14 @@ update_asteroids :: proc(
 			if asteroid.size != .Small {
 				append(asteroids, make_asteroid_child(asteroid), make_asteroid_child(asteroid))
 			}
-			unordered_remove(asteroids, index)
+			append(&remove_indices, uint(index))
 			score^ += uint(ASTEROID_SIZE_VALUE[asteroid.size])
 		}
+	}
+
+	slice.reverse(remove_indices[:])
+	for index in remove_indices {
+		unordered_remove(asteroids, index)
 	}
 
 	shrink(asteroids)
