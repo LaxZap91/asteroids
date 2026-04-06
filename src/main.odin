@@ -57,6 +57,11 @@ main :: proc() {
 	asteroids := make([dynamic]Asteroid)
 	defer delete(asteroids)
 
+	menu_asteroids: [MAX_ASTEROIDS]Asteroid
+	for i in 0 ..< MAX_ASTEROIDS {
+		menu_asteroids[i] = make_asteroid_rand()
+	}
+
 	asteroid_spawn_counter: uint = ASTEROID_DEFAULT_SPAWN_COUNTER
 	score: uint = 0
 
@@ -84,6 +89,8 @@ main :: proc() {
 
 				reset_game(&player, &bullets, &asteroids, &asteroid_spawn_counter)
 			}
+
+			update_menu_asteroids(menu_asteroids[:], dt)
 		}
 
 		rl.BeginDrawing()
@@ -93,6 +100,7 @@ main :: proc() {
 		if game_state == .GAME {
 			draw_game(player, bullets[:], asteroids[:], score)
 		} else {
+			draw_asteroids(menu_asteroids[:])
 			draw_menu(high_score)
 		}
 

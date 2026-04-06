@@ -264,7 +264,7 @@ check_asteroid_bullet_collision :: proc(
 	return collision
 }
 
-// Updates bullets
+// Updates asteroids
 update_asteroids :: proc(
 	asteroids: ^[dynamic]Asteroid,
 	dt: f32,
@@ -294,6 +294,19 @@ update_asteroids :: proc(
 	}
 
 	shrink(asteroids)
+}
+
+// Updates asteroids
+update_menu_asteroids :: proc(
+	asteroids: []Asteroid,
+	dt: f32,
+) {
+	for &asteroid, index in asteroids {
+		asteroid.pos += asteroid.vel * dt
+		asteroid.angle += asteroid.rotation_speed
+		wrap_angle(&asteroid)
+		wrap_position(&asteroid)
+	}
 }
 
 // Creates a normal decagon
