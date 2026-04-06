@@ -1,6 +1,5 @@
 package asteroids
 
-import "core:fmt"
 import rl "vendor:raylib"
 
 PLAYER_ROTATION_AMOUNT :: 5 * rl.DEG2RAD

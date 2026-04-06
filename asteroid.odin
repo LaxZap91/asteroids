@@ -1,6 +1,5 @@
 package asteroids
 
-import "core:fmt"
 import "core:math"
 import "core:math/rand"
 import "core:slice"
@@ -11,6 +10,7 @@ ASTEROID_MAX_SPEED :: 600
 ASTEROID_COLOR :: rl.WHITE
 ASTEROID_ROTATION_SPEED :: 5
 MAX_ASTEROIDS :: 15
+ASTEROID_CORNER_SIZE :: 75
 ASTEROID_SIZE :: enum {
 	Large,
 	Medium,
@@ -20,6 +20,12 @@ ASTEROID_SIZE_VALUE := [ASTEROID_SIZE]f32 {
 	.Large  = 60,
 	.Medium = 45,
 	.Small  = 30,
+}
+SIDES :: enum {
+	Top,
+	Bottom,
+	Left,
+	Right,
 }
 
 base_octogon := make_base_octogon()
@@ -32,13 +38,36 @@ Asteroid :: struct {
 }
 
 make_asteroid_rand :: proc() -> Asteroid {
-	pos := rl.Vector2{WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}
-	angle := rand.float32_range(0, 2 * rl.PI)
+	pos: rl.Vector2
+	angle: f32
 	speed := rand.float32_range(ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED)
+	size := rand.choice_enum(ASTEROID_SIZE)
+
+	if side := rand.choice_enum(SIDES); side == .Top {
+		x := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_WIDTH - ASTEROID_CORNER_SIZE)
+		y := -ASTEROID_SIZE_VALUE[size]
+		pos = {x, y}
+		angle = rand.float32_range(-135 * rl.DEG2RAD, 135 * rl.DEG2RAD)
+	} else if side == .Bottom {
+		x := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_WIDTH - ASTEROID_CORNER_SIZE)
+		y := WINDOW_HEIGHT - ASTEROID_SIZE_VALUE[size]
+		pos = {x, y}
+		angle = rand.float32_range(-45 * rl.DEG2RAD, 45 * rl.DEG2RAD)
+	} else if side == .Left {
+		x := -ASTEROID_SIZE_VALUE[size]
+		y := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_HEIGHT - ASTEROID_CORNER_SIZE)
+		pos = {x, y}
+		angle = rand.float32_range(45 * rl.DEG2RAD, 135 * rl.DEG2RAD)
+	} else if side == .Right {
+		x := WINDOW_HEIGHT - ASTEROID_SIZE_VALUE[size]
+		y := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_HEIGHT - ASTEROID_CORNER_SIZE)
+		pos = {x, y}
+		angle = rand.float32_range(-135 * rl.DEG2RAD, -45 * rl.DEG2RAD)
+	}
+
 	vel := rl.Vector2Rotate(rl.Vector2{0, -1} * speed, angle)
 	rotation_speed :=
 		rand.float32_range(-ASTEROID_ROTATION_SPEED, ASTEROID_ROTATION_SPEED) * rl.DEG2RAD
-	size := rand.choice_enum(ASTEROID_SIZE)
 	points := [9]rl.Vector2 {
 		base_octogon[0],
 		base_octogon[1],

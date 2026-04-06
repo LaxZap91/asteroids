@@ -50,6 +50,7 @@ main :: proc() {
 
 		// Update
 		if rl.IsKeyDown(.W) do player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, player.angle)
+		// if rl.IsKeyDown(.S) do player.vel = rl.Vector2MoveTowards(player.vel, {0, 0}, PLAYER_SPEED / 3)
 		if rl.IsKeyDown(.A) do player.angle -= PLAYER_ROTATION_AMOUNT
 		if rl.IsKeyDown(.D) do player.angle += PLAYER_ROTATION_AMOUNT
 		if rl.IsKeyDown(.SPACE) && player.shoot_timer == 0 {
