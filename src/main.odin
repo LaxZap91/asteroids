@@ -81,7 +81,7 @@ main :: proc() {
 
 		// Update game
 		if game_state == .GAME {
-			if player.state == .Dead {
+			if player.state == .Dead && player.death_timer == 0 {
 				game_state = .MENU
 				if score > high_score do high_score = score
 				score = 0
@@ -156,7 +156,7 @@ update_game :: proc(
 		asteroid_spawn_counter^ = uint(rand.int_range(ASTEROID_MIN_DELAY, ASTEROID_MAX_DELAY))
 	} else if asteroid_spawn_counter^ > 0 && len(asteroids) < MAX_ASTEROIDS do asteroid_spawn_counter^ -= 1
 
-	update_player(player, dt, asteroids[:])
+	update_player(player, dt, asteroids[:], particles)
 	update_bullets(bullets, dt)
 	update_asteroids(asteroids, dt, bullets, particles, score)
 	update_particles(particles, dt)
@@ -232,6 +232,7 @@ reset_game :: proc(
 	player.vel = {0, 0}
 	player.angle = 0
 	player.shoot_timer = 0
+	player.death_timer = 0
 	player.state = .Alive
 
 	// Resets bullets

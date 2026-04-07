@@ -1,6 +1,5 @@
 package asteroids
 
-import "core:fmt"
 import "core:slice"
 import "core:math/rand"
 import rl "vendor:raylib"
@@ -10,7 +9,7 @@ PARTICLE_MAX_TIME :: 120
 PARTICLE_OFFSET_MIN :: -10
 PARTICLE_OFFSET_MAX :: 10
 PARTICLE_SPEED_MIN :: 20
-PARTICLE_SPEED_MAX :: 40
+PARTICLE_SPEED_MAX :: 60
 PARTICLE_SIZE :: 4
 PARTICLE_COLOR :: rl.WHITE
 

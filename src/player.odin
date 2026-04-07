@@ -10,6 +10,10 @@ PLAYER_SPEED :: 60
 PLAYER_SPEED_CAP :: PLAYER_SPEED * 35
 // Frames between shots
 PLAYER_SHOOT_DELAY :: 15
+// Frames before returning to menu after death
+PLAYER_DEATH_DELAY :: 150
+// Number of particles spawned on player death
+PLAYER_PARTICLE_COUNT :: 30
 // Size multiplication of the player spite
 PLAYER_SCALE :: 20
 // Height of the player sprite
@@ -27,6 +31,7 @@ PLAYER_STATE :: enum {
 Player :: struct {
 	using obj:   Object,
 	shoot_timer: uint,
+	death_timer: uint,
 	state:       PLAYER_STATE,
 }
 
@@ -35,7 +40,11 @@ clamp_speed :: proc(player: ^Player) {
 	player.vel = rl.Vector2ClampValue(player.vel, 0, PLAYER_SPEED_CAP)
 }
 
-check_player_asteroid_collision :: proc(player: ^Player, asteroids: []Asteroid) {
+check_player_asteroid_collision :: proc(
+	player: ^Player,
+	asteroids: []Asteroid,
+	particles: ^[dynamic]Particle,
+) {
 	top :=
 		rl.Vector2Rotate(rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) +
 		player.pos
@@ -51,6 +60,11 @@ check_player_asteroid_collision :: proc(player: ^Player, asteroids: []Asteroid) 
 			player.angle,
 		) +
 		player.pos
+	center :=
+		rl.Vector2Rotate(rl.Vector2{0, PLAYER_HEIGHT / 4} * PLAYER_SCALE, player.angle) +
+		player.pos
+	left_center := rl.Vector2Rotate(0.5 * (top - left), player.angle) + player.pos
+	right_center := rl.Vector2Rotate(0.5 * (top - right), player.angle) + player.pos
 
 	for asteroid, i in asteroids {
 		asteroid := asteroid
@@ -60,16 +74,37 @@ check_player_asteroid_collision :: proc(player: ^Player, asteroids: []Asteroid) 
 				asteroid.pos
 		}
 
-		if rl.CheckCollisionPointPoly(top, raw_data(asteroid.base_points[:]), 11) ||
-		   rl.CheckCollisionPointPoly(left, raw_data(asteroid.base_points[:]), 11) ||
-		   rl.CheckCollisionPointPoly(right, raw_data(asteroid.base_points[:]), 11) {
+		points := raw_data(asteroid.base_points[:])
+
+		collision :=
+			rl.CheckCollisionPointPoly(top, points, 11) ||
+			rl.CheckCollisionPointPoly(left, points, 11) ||
+			rl.CheckCollisionPointPoly(right, points, 11) ||
+			rl.CheckCollisionPointPoly(center, points, 11) ||
+			rl.CheckCollisionPointPoly(left_center, points, 11) ||
+			rl.CheckCollisionPointPoly(right_center, points, 11)
+
+		if collision {
 			player.state = .Dead
+			make_player_particles(particles, player^)
 		}
 	}
 }
 
+// Creates particles for player destructoin
+make_player_particles :: proc(particles: ^[dynamic]Particle, player: Player) {
+	for _ in 0 ..< PLAYER_PARTICLE_COUNT {
+		append(particles, make_particle(player.pos, PLAYER_SCALE))
+	}
+}
+
 // Updates the player
-update_player :: proc(player: ^Player, dt: f32, asteroids: []Asteroid) {
+update_player :: proc(
+	player: ^Player,
+	dt: f32,
+	asteroids: []Asteroid,
+	particles: ^[dynamic]Particle,
+) {
 	clamp_speed(player)
 	player.pos += player.vel * dt
 	if player.shoot_timer > 0 {
@@ -79,12 +114,17 @@ update_player :: proc(player: ^Player, dt: f32, asteroids: []Asteroid) {
 	wrap_position(player)
 	wrap_angle(player)
 
-	check_player_asteroid_collision(player, asteroids)
+	check_player_asteroid_collision(player, asteroids, particles)
 
 	if player.state == .Dead {
 		player.pos = {-100, -100}
 		player.vel = {0, 0}
-		player.shoot_timer = 1;
+		player.shoot_timer = 1
+		if player.death_timer > 0 {
+			player.death_timer -= 1
+		} else {
+			player.death_timer = PLAYER_DEATH_DELAY
+		}
 	}
 }
 

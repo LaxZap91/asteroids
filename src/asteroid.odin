@@ -1,6 +1,5 @@
 package asteroids
 
-import "core:fmt"
 import "core:math"
 import "core:math/rand"
 import "core:slice"
@@ -245,7 +244,7 @@ check_asteroid_bullet_collision :: proc(
 	asteroid: Asteroid,
 	bullets: ^[dynamic]Bullet,
 ) -> (
-	collision: bool,
+	hit: bool,
 ) {
 	for bullet, i in bullets {
 		asteroid := asteroid
@@ -255,19 +254,44 @@ check_asteroid_bullet_collision :: proc(
 				asteroid.pos
 		}
 
-		if rl.CheckCollisionPointPoly(bullet.pos, raw_data(asteroid.base_points[:]), 11) {
+		points := raw_data(asteroid.base_points[:])
+
+		collision :=
+			rl.CheckCollisionPointPoly(bullet.pos, points, 11) ||
+			rl.CheckCollisionPointPoly(
+				{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
+				points,
+				11,
+			) ||
+			rl.CheckCollisionPointPoly(
+				{bullet.pos.x + (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
+				points,
+				11,
+			) ||
+			rl.CheckCollisionPointPoly(
+				{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y + (BULLET_SIZE / 2)},
+				points,
+				11,
+			) ||
+			rl.CheckCollisionPointPoly(
+				{bullet.pos.x + (BULLET_SIZE / 2), bullet.pos.y + (BULLET_SIZE / 2)},
+				points,
+				11,
+			)
+
+		if collision {
 			unordered_remove(bullets, i)
-			collision = true
+			hit = true
 			break
 		}
 
 	}
 
-	return collision
+	return hit
 }
 
 make_asteroid_particles :: proc(particles: ^[dynamic]Particle, asteroid: Asteroid) {
-	for _ in 0..<ASTEROID_PARTICLE_COUNT {
+	for _ in 0 ..< ASTEROID_PARTICLE_COUNT {
 		append(particles, make_particle(asteroid.pos, ASTEROID_SIZE_VALUE[asteroid.size]))
 	}
 }
@@ -307,10 +331,7 @@ update_asteroids :: proc(
 }
 
 // Updates asteroids
-update_menu_asteroids :: proc(
-	asteroids: []Asteroid,
-	dt: f32,
-) {
+update_menu_asteroids :: proc(asteroids: []Asteroid, dt: f32) {
 	for &asteroid, index in asteroids {
 		asteroid.pos += asteroid.vel * dt
 		asteroid.angle += asteroid.rotation_speed
