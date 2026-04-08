@@ -10,5 +10,4 @@ The classic asteroids game, written in the odin programming language
 
 ## TODO
 
-- ADD lives system
-- ADD asteroid shape variety
+- Change to not using dynamic arrays?

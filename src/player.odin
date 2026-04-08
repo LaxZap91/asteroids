@@ -5,13 +5,13 @@ import rl "vendor:raylib"
 // Increment that the player angle rotates by
 PLAYER_ROTATION_AMOUNT :: 5 * rl.DEG2RAD
 // Increment that the player speed increases by
-PLAYER_SPEED :: 60
+PLAYER_SPEED :: 25
 // Max speed for the player
-PLAYER_SPEED_CAP :: PLAYER_SPEED * 35
-// Frames between shots
-PLAYER_SHOOT_DELAY :: 15
+PLAYER_SPEED_CAP :: PLAYER_SPEED * 45
 // Frames before returning to menu after death
 PLAYER_DEATH_DELAY :: 150
+// maximum number of lives player can have
+PLAYER_MAX_LIVES :: 6
 // Number of particles spawned on player death
 PLAYER_PARTICLE_COUNT :: 30
 // Size multiplication of the player spite
@@ -32,6 +32,7 @@ Player :: struct {
 	using obj:   Object,
 	shoot_timer: uint,
 	death_timer: uint,
+	lives:       uint,
 	state:       PLAYER_STATE,
 }
 
@@ -44,6 +45,8 @@ check_player_asteroid_collision :: proc(
 	player: ^Player,
 	asteroids: []Asteroid,
 	particles: ^[dynamic]Particle,
+) -> (
+	hit: bool,
 ) {
 	top :=
 		rl.Vector2Rotate(rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) +
@@ -66,7 +69,7 @@ check_player_asteroid_collision :: proc(
 	left_center := rl.Vector2Rotate(0.5 * (top - left), player.angle) + player.pos
 	right_center := rl.Vector2Rotate(0.5 * (top - right), player.angle) + player.pos
 
-	for asteroid, i in asteroids {
+	for asteroid in asteroids {
 		asteroid := asteroid
 		for &point in asteroid.base_points {
 			point =
@@ -85,16 +88,18 @@ check_player_asteroid_collision :: proc(
 			rl.CheckCollisionPointPoly(right_center, points, 11)
 
 		if collision {
-			player.state = .Dead
-			make_player_particles(particles, player^)
+			hit = true
+			break
 		}
 	}
+
+	return hit
 }
 
 // Creates particles for player destructoin
 make_player_particles :: proc(particles: ^[dynamic]Particle, player: Player) {
 	for _ in 0 ..< PLAYER_PARTICLE_COUNT {
-		append(particles, make_particle(player.pos, PLAYER_SCALE))
+		append(particles, make_particle(player.pos, PLAYER_SCALE * 2))
 	}
 }
 
@@ -105,26 +110,26 @@ update_player :: proc(
 	asteroids: []Asteroid,
 	particles: ^[dynamic]Particle,
 ) {
-	clamp_speed(player)
-	player.pos += player.vel * dt
-	if player.shoot_timer > 0 {
-		player.shoot_timer -= 1
-	}
+	if player.state == .Alive {
+		clamp_speed(player)
+		player.pos += player.vel * dt
+		if player.shoot_timer > 0 do player.shoot_timer -= 1
 
-	wrap_position(player)
-	wrap_angle(player)
+		wrap_position(player)
+		wrap_angle(player)
 
-	check_player_asteroid_collision(player, asteroids, particles)
+		if check_player_asteroid_collision(player, asteroids, particles) {
+			player.state = .Dead
+			make_player_particles(particles, player^)
 
-	if player.state == .Dead {
-		player.pos = {-100, -100}
-		player.vel = {0, 0}
-		player.shoot_timer = 1
-		if player.death_timer > 0 {
-			player.death_timer -= 1
-		} else {
+			player.pos = {-100, -100}
+			player.vel = {0, 0}
+			player.shoot_timer = 1
 			player.death_timer = PLAYER_DEATH_DELAY
+			if player.lives > 0 do player.lives -= 1
 		}
+	} else if player.death_timer > 0 {
+		player.death_timer -= 1
 	}
 }
 
@@ -187,6 +192,23 @@ draw_player_wrapping :: proc(player: Player, top, left, right, center: rl.Vector
 		left := rl.Vector2{left.x, left.y - WINDOW_HEIGHT}
 		right := rl.Vector2{right.x, right.y - WINDOW_HEIGHT}
 		center := rl.Vector2{center.x, center.y - WINDOW_HEIGHT}
+
+		rl.DrawLineStrip(raw_data([]rl.Vector2{top, left, center, right, top}), 5, PLAYER_COLOR)
+	}
+}
+
+draw_player_lives :: proc(player: Player) {
+	// Player sprite point positions
+	top := (rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE) + {0, 175}
+	left := (rl.Vector2{PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE) + {0, 175}
+	right := (rl.Vector2{-PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE) + {0, 175}
+	center := (rl.Vector2{0, PLAYER_HEIGHT / 4} * PLAYER_SCALE) + {0, 175}
+
+	for i in 0 ..< player.lives {
+		top.x += PLAYER_WIDTH * PLAYER_SCALE + 15
+		left.x += PLAYER_WIDTH * PLAYER_SCALE + 15
+		right.x += PLAYER_WIDTH * PLAYER_SCALE + 15
+		center.x += PLAYER_WIDTH * PLAYER_SCALE + 15
 
 		rl.DrawLineStrip(raw_data([]rl.Vector2{top, left, center, right, top}), 5, PLAYER_COLOR)
 	}

@@ -82,10 +82,20 @@ main :: proc() {
 		// Update game
 		if game_state == .GAME {
 			if player.state == .Dead && player.death_timer == 0 {
-				game_state = .MENU
-				if score > high_score do high_score = score
-				score = 0
-				restart_delay = 50
+				if player.lives == 0 {
+					game_state = .MENU
+					if score > high_score do high_score = score
+					score = 0
+					restart_delay = 10
+				} else {
+					reset_game_respawn(
+						&player,
+						&bullets,
+						&asteroids,
+						&particles,
+						&asteroid_spawn_counter,
+					)
+				}
 			}
 
 			update_game(
@@ -98,11 +108,17 @@ main :: proc() {
 				dt,
 			)
 		} else {
-			if restart_delay == 0  {
+			if restart_delay == 0 {
 				if rl.IsKeyDown(.SPACE) {
 					game_state = .GAME
 
-					reset_game(&player, &bullets, &asteroids, &particles, &asteroid_spawn_counter)
+					reset_game_full(
+						&player,
+						&bullets,
+						&asteroids,
+						&particles,
+						&asteroid_spawn_counter,
+					)
 				}
 			} else if restart_delay > 0 do restart_delay -= 1
 
@@ -140,14 +156,11 @@ update_game :: proc(
 ) {
 	if player.state == .Alive {
 		// Get keyboard input
-		if rl.IsKeyDown(.W) do player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, player.angle)
+		if rl.IsKeyDown(.UP) do player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, player.angle)
 		// if rl.IsKeyDown(.S) do player.vel = rl.Vector2MoveTowards(player.vel, {0, 0}, PLAYER_SPEED / 3)
-		if rl.IsKeyDown(.A) do player.angle -= PLAYER_ROTATION_AMOUNT
-		if rl.IsKeyDown(.D) do player.angle += PLAYER_ROTATION_AMOUNT
-		if rl.IsKeyDown(.SPACE) && player.shoot_timer == 0 {
-			append(bullets, make_bullet(player^))
-			player.shoot_timer = PLAYER_SHOOT_DELAY
-		}
+		if rl.IsKeyDown(.LEFT) do player.angle -= PLAYER_ROTATION_AMOUNT
+		if rl.IsKeyDown(.RIGHT) do player.angle += PLAYER_ROTATION_AMOUNT
+		if rl.IsKeyPressed(.SPACE) do append(bullets, make_bullet(player^))
 	}
 
 	// Update game objects
@@ -171,6 +184,7 @@ draw_game :: proc(
 	score: uint,
 ) {
 	draw_player(player)
+	draw_player_lives(player)
 	draw_bullets(bullets)
 	draw_asteroids(asteroids)
 	draw_particles(particles)
@@ -179,13 +193,7 @@ draw_game :: proc(
 		fmt.aprintf("Score: %v", score, allocator = context.temp_allocator),
 		context.temp_allocator,
 	)
-	rl.DrawText(
-		score_text,
-		i32((WINDOW_WIDTH / 2) - (rl.MeasureText(score_text, SCORE_TEXT_SIZE) / 2)),
-		50,
-		SCORE_TEXT_SIZE,
-		rl.WHITE,
-	)
+	rl.DrawText(score_text, (PLAYER_WIDTH / 2) * PLAYER_SCALE + 15, 50, SCORE_TEXT_SIZE, rl.WHITE)
 }
 
 // Draws the menu
@@ -219,8 +227,8 @@ draw_menu :: proc(high_score: uint) {
 	)
 }
 
-// Resets the state of the game
-reset_game :: proc(
+// Fully resets the state of the game
+reset_game_full :: proc(
 	player: ^Player,
 	bullets: ^[dynamic]Bullet,
 	asteroids: ^[dynamic]Asteroid,
@@ -232,7 +240,36 @@ reset_game :: proc(
 	player.vel = {0, 0}
 	player.angle = 0
 	player.shoot_timer = 0
-	player.death_timer = 0
+	player.death_timer = PLAYER_DEATH_DELAY
+	player.lives = PLAYER_MAX_LIVES
+	player.state = .Alive
+
+	// Resets bullets
+	clear(bullets)
+	shrink(bullets)
+
+	// Resets asteroids
+	clear(asteroids)
+	shrink(asteroids)
+	asteroid_spawn_counter^ = 100
+
+	// Resets particles
+	clear(particles)
+	shrink(particles)
+}
+
+reset_game_respawn :: proc(
+	player: ^Player,
+	bullets: ^[dynamic]Bullet,
+	asteroids: ^[dynamic]Asteroid,
+	particles: ^[dynamic]Particle,
+	asteroid_spawn_counter: ^uint,
+) {
+	player.pos = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}
+	player.vel = {0, 0}
+	player.angle = 0
+	player.shoot_timer = 0
+	player.death_timer = PLAYER_DEATH_DELAY
 	player.state = .Alive
 
 	// Resets bullets

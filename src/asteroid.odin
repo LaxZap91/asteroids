@@ -332,7 +332,7 @@ update_asteroids :: proc(
 
 // Updates asteroids
 update_menu_asteroids :: proc(asteroids: []Asteroid, dt: f32) {
-	for &asteroid, index in asteroids {
+	for &asteroid in asteroids {
 		asteroid.pos += asteroid.vel * dt
 		asteroid.angle += asteroid.rotation_speed
 		wrap_angle(&asteroid)

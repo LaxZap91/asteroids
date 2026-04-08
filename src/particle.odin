@@ -1,7 +1,7 @@
 package asteroids
 
-import "core:slice"
 import "core:math/rand"
+import "core:slice"
 import rl "vendor:raylib"
 
 PARTICLE_MIN_TIME :: 60
@@ -10,7 +10,7 @@ PARTICLE_OFFSET_MIN :: -10
 PARTICLE_OFFSET_MAX :: 10
 PARTICLE_SPEED_MIN :: 20
 PARTICLE_SPEED_MAX :: 60
-PARTICLE_SIZE :: 4
+PARTICLE_SIZE :: 5
 PARTICLE_COLOR :: rl.WHITE
 
 Particle :: struct {
@@ -34,8 +34,9 @@ draw_particles :: proc(particles: []Particle) {
 		rl.DrawRectangle(
 			i32(particle.pos.x) - PARTICLE_SIZE,
 			i32(particle.pos.y) - PARTICLE_SIZE,
-			PARTICLE_SIZE, PARTICLE_SIZE,
-			PARTICLE_COLOR
+			PARTICLE_SIZE,
+			PARTICLE_SIZE,
+			PARTICLE_COLOR,
 		)
 	}
 }
@@ -45,7 +46,7 @@ update_particles :: proc(particles: ^[dynamic]Particle, dt: f32) {
 
 	for &particle, index in particles {
 		particle.pos += particle.vel * dt
-		particle.timer -= 1;
+		particle.timer -= 1
 
 		if particle.timer == 0 {
 			append(&remove_indices, uint(index))
