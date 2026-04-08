@@ -10,6 +10,8 @@ PLAYER_SPEED :: 25
 PLAYER_SPEED_CAP :: PLAYER_SPEED * 45
 // Frames before returning to menu after death
 PLAYER_DEATH_DELAY :: 150
+// Frames before player can shoot again
+PLAYER_SHOOT_DELAY :: 15
 // maximum number of lives player can have
 PLAYER_MAX_LIVES :: 6
 // Number of particles spawned on player death
@@ -41,6 +43,7 @@ clamp_speed :: proc(player: ^Player) {
 	player.vel = rl.Vector2ClampValue(player.vel, 0, PLAYER_SPEED_CAP)
 }
 
+// Checks if the player is colliding with an asteroid
 check_player_asteroid_collision :: proc(
 	player: ^Player,
 	asteroids: []Asteroid,
@@ -48,6 +51,7 @@ check_player_asteroid_collision :: proc(
 ) -> (
 	hit: bool,
 ) {
+	// Calculates player collision points
 	top :=
 		rl.Vector2Rotate(rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) +
 		player.pos
@@ -70,6 +74,7 @@ check_player_asteroid_collision :: proc(
 	right_center := rl.Vector2Rotate(0.5 * (top - right), player.angle) + player.pos
 
 	for asteroid in asteroids {
+		// Rotates asteroid
 		asteroid := asteroid
 		for &point in asteroid.base_points {
 			point =
@@ -79,6 +84,7 @@ check_player_asteroid_collision :: proc(
 
 		points := raw_data(asteroid.base_points[:])
 
+		// Checks if player points are inside asteroid
 		collision :=
 			rl.CheckCollisionPointPoly(top, points, 11) ||
 			rl.CheckCollisionPointPoly(left, points, 11) ||
@@ -106,11 +112,21 @@ make_player_particles :: proc(particles: ^[dynamic]Particle, player: Player) {
 // Updates the player
 update_player :: proc(
 	player: ^Player,
-	dt: f32,
 	asteroids: []Asteroid,
+	bullets: ^[dynamic; BULLET_MAX]Bullet,
 	particles: ^[dynamic]Particle,
+	dt: f32,
 ) {
 	if player.state == .Alive {
+		// Player input
+		if rl.IsKeyDown(.UP) do player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, player.angle)
+		if rl.IsKeyDown(.LEFT) do player.angle -= PLAYER_ROTATION_AMOUNT
+		if rl.IsKeyDown(.RIGHT) do player.angle += PLAYER_ROTATION_AMOUNT
+		if rl.IsKeyPressed(.SPACE) && player.shoot_timer == 0 {
+			append(bullets, make_bullet(player^))
+			player.shoot_timer = PLAYER_SHOOT_DELAY
+		}
+
 		clamp_speed(player)
 		player.pos += player.vel * dt
 		if player.shoot_timer > 0 do player.shoot_timer -= 1
@@ -197,6 +213,7 @@ draw_player_wrapping :: proc(player: Player, top, left, right, center: rl.Vector
 	}
 }
 
+// Draws number of lives that player has remaining
 draw_player_lives :: proc(player: Player) {
 	// Player sprite point positions
 	top := (rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE) + {0, 175}
@@ -204,11 +221,12 @@ draw_player_lives :: proc(player: Player) {
 	right := (rl.Vector2{-PLAYER_WIDTH / 2, PLAYER_HEIGHT / 2} * PLAYER_SCALE) + {0, 175}
 	center := (rl.Vector2{0, PLAYER_HEIGHT / 4} * PLAYER_SCALE) + {0, 175}
 
-	for i in 0 ..< player.lives {
-		top.x += PLAYER_WIDTH * PLAYER_SCALE + 15
-		left.x += PLAYER_WIDTH * PLAYER_SCALE + 15
-		right.x += PLAYER_WIDTH * PLAYER_SCALE + 15
-		center.x += PLAYER_WIDTH * PLAYER_SCALE + 15
+	for _ in 0 ..< player.lives {
+		// Shifts sprite over
+		top.x += (PLAYER_WIDTH * PLAYER_SCALE) + 15
+		left.x += (PLAYER_WIDTH * PLAYER_SCALE) + 15
+		right.x += (PLAYER_WIDTH * PLAYER_SCALE) + 15
+		center.x += (PLAYER_WIDTH * PLAYER_SCALE) + 15
 
 		rl.DrawLineStrip(raw_data([]rl.Vector2{top, left, center, right, top}), 5, PLAYER_COLOR)
 	}

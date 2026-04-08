@@ -8,6 +8,8 @@ BULLET_SPEED :: PLAYER_SPEED_CAP + 100
 BULLET_COLOR :: rl.WHITE
 // Size of the bullet sprite
 BULLET_SIZE :: 10
+// Maximum number of bullets
+BULLET_MAX :: 12
 
 Bullet :: struct {
 	using obj: Object,
@@ -23,7 +25,7 @@ make_bullet :: proc(player: Player) -> Bullet {
 }
 
 // Updates bullets
-update_bullets :: proc(bullets: ^[dynamic]Bullet, dt: f32) {
+update_bullets :: proc(bullets: ^[dynamic; BULLET_MAX]Bullet, dt: f32) {
 	for &bullet, index in bullets {
 		bullet.pos += bullet.vel * dt
 

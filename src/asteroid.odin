@@ -5,14 +5,14 @@ import "core:math/rand"
 import "core:slice"
 import rl "vendor:raylib"
 
-// Starting deley before first asteroid
-ASTEROID_DEFAULT_SPAWN_COUNTER :: 100
 // Minimum delay between asteroids
 ASTEROID_MIN_DELAY :: 90
 // Maximum delay between asteroids
 ASTEROID_MAX_DELAY :: 150
+// Number of asteroids on screen that stops spawning
+ASTEROID_SOFT_MAX :: 15
 // Maximum number of asteroids on screen
-MAX_ASTEROIDS :: 15
+ASTEROID_MAX :: ASTEROID_SOFT_MAX * 4
 // Border between corner that asteroids spawn in
 ASTEROID_CORNER_SIZE :: 75
 // Minimum speed that an asteroid can move at
@@ -43,11 +43,11 @@ ASTEROID_POINT_EDGE_MOVE_MAX :: 0.45
 // chosen to change
 ASTEROID_POINT_EDGE_MOVE_MIN :: 0.2
 // Minimum offset of asteroid choise position
-OFFSET_MIN :: 2
+ASTEROID_OFFSET_MIN :: 2
 // Central offset of asteroid choise position
-OFFSET_CENTER :: 4
+ASTEROID_OFFSET_CENTER :: 4
 // Maximum offset of asteroid choise position
-OFFSET_MAX :: 8
+ASTEROID_OFFSET_MAX :: 8
 // Color of asteroid sprite
 ASTEROID_COLOR :: rl.WHITE
 
@@ -59,66 +59,6 @@ Asteroid :: struct {
 	rotation_speed: f32,
 	size:           ASTEROID_SIZE,
 	base_points:    [11]rl.Vector2,
-}
-
-// Makes points for an asteroid
-make_points :: proc() -> [11]rl.Vector2 {
-	// Initial positions
-	points := [11]rl.Vector2 {
-		base_decagon[0],
-		base_decagon[1],
-		base_decagon[2],
-		base_decagon[3],
-		base_decagon[4],
-		base_decagon[5],
-		base_decagon[6],
-		base_decagon[7],
-		base_decagon[8],
-		base_decagon[9],
-		base_decagon[0],
-	}
-	change_point_one := rand.uint32_range(0, 10)
-	change_point_one_move := rand.float32_range(
-		ASTEROID_POINT_EDGE_MOVE_MIN,
-		ASTEROID_POINT_EDGE_MOVE_MAX,
-	)
-
-	offset_two := rand.uint32_range(OFFSET_MIN, OFFSET_CENTER)
-	change_point_two := (change_point_one + offset_two) % 10
-	change_point_two_move := rand.float32_range(
-		ASTEROID_POINT_EDGE_MOVE_MIN,
-		ASTEROID_POINT_EDGE_MOVE_MAX,
-	)
-
-	offset_three := rand.uint32_range(OFFSET_CENTER, OFFSET_MAX)
-	change_point_three := (change_point_one + offset_three) % 10
-	change_point_three_move := rand.float32_range(
-		ASTEROID_POINT_EDGE_MOVE_MIN,
-		ASTEROID_POINT_EDGE_MOVE_MAX,
-	)
-
-	if change_point_one == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_one_move)
-	points[change_point_one] = rl.Vector2MoveTowards(
-		points[change_point_one],
-		{0, 0},
-		change_point_one_move,
-	)
-
-	if change_point_two == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_two_move)
-	points[change_point_two] = rl.Vector2MoveTowards(
-		points[change_point_two],
-		{0, 0},
-		change_point_two_move,
-	)
-
-	if change_point_three == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_three_move)
-	points[change_point_three] = rl.Vector2MoveTowards(
-		points[change_point_three],
-		{0, 0},
-		change_point_three_move,
-	)
-
-	return points
 }
 
 // Makes an asteroid that spawns from the edge of the screen
@@ -242,7 +182,7 @@ draw_asteroids_wrapping :: proc(asteroid: Asteroid) {
 // Checks if an asteroid is colliding with a bullet
 check_asteroid_bullet_collision :: proc(
 	asteroid: Asteroid,
-	bullets: ^[dynamic]Bullet,
+	bullets: ^[dynamic; BULLET_MAX]Bullet,
 ) -> (
 	hit: bool,
 ) {
@@ -257,7 +197,6 @@ check_asteroid_bullet_collision :: proc(
 		points := raw_data(asteroid.base_points[:])
 
 		collision :=
-			rl.CheckCollisionPointPoly(bullet.pos, points, 11) ||
 			rl.CheckCollisionPointPoly(
 				{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
 				points,
@@ -290,6 +229,7 @@ check_asteroid_bullet_collision :: proc(
 	return hit
 }
 
+// Creates particles for asteroid destruction
 make_asteroid_particles :: proc(particles: ^[dynamic]Particle, asteroid: Asteroid) {
 	for _ in 0 ..< ASTEROID_PARTICLE_COUNT {
 		append(particles, make_particle(asteroid.pos, ASTEROID_SIZE_VALUE[asteroid.size]))
@@ -298,10 +238,10 @@ make_asteroid_particles :: proc(particles: ^[dynamic]Particle, asteroid: Asteroi
 
 // Updates asteroids
 update_asteroids :: proc(
-	asteroids: ^[dynamic]Asteroid,
-	dt: f32,
-	bullets: ^[dynamic]Bullet,
+	asteroids: ^[dynamic; ASTEROID_MAX]Asteroid,
+	bullets: ^[dynamic; BULLET_MAX]Bullet,
 	particles: ^[dynamic]Particle,
+	dt: f32,
 	score: ^uint,
 ) {
 	remove_indices := make([dynamic]uint, context.temp_allocator)
@@ -326,8 +266,6 @@ update_asteroids :: proc(
 	for index in remove_indices {
 		unordered_remove(asteroids, index)
 	}
-
-	shrink(asteroids)
 }
 
 // Updates asteroids
@@ -349,6 +287,66 @@ make_base_decagon :: proc "contextless" () -> (points: [10]rl.Vector2) {
 		point := rl.Vector2{point_cos, point_sin}
 		points[i - 1] = point
 	}
+
+	return points
+}
+
+// Makes points for an asteroid
+make_points :: proc() -> [11]rl.Vector2 {
+	// Initial positions
+	points := [11]rl.Vector2 {
+		base_decagon[0],
+		base_decagon[1],
+		base_decagon[2],
+		base_decagon[3],
+		base_decagon[4],
+		base_decagon[5],
+		base_decagon[6],
+		base_decagon[7],
+		base_decagon[8],
+		base_decagon[9],
+		base_decagon[0],
+	}
+	change_point_one := rand.uint32_range(0, 10)
+	change_point_one_move := rand.float32_range(
+		ASTEROID_POINT_EDGE_MOVE_MIN,
+		ASTEROID_POINT_EDGE_MOVE_MAX,
+	)
+
+	offset_two := rand.uint32_range(ASTEROID_OFFSET_MIN, ASTEROID_OFFSET_CENTER)
+	change_point_two := (change_point_one + offset_two) % 10
+	change_point_two_move := rand.float32_range(
+		ASTEROID_POINT_EDGE_MOVE_MIN,
+		ASTEROID_POINT_EDGE_MOVE_MAX,
+	)
+
+	offset_three := rand.uint32_range(ASTEROID_OFFSET_CENTER, ASTEROID_OFFSET_MAX)
+	change_point_three := (change_point_one + offset_three) % 10
+	change_point_three_move := rand.float32_range(
+		ASTEROID_POINT_EDGE_MOVE_MIN,
+		ASTEROID_POINT_EDGE_MOVE_MAX,
+	)
+
+	if change_point_one == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_one_move)
+	points[change_point_one] = rl.Vector2MoveTowards(
+		points[change_point_one],
+		{0, 0},
+		change_point_one_move,
+	)
+
+	if change_point_two == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_two_move)
+	points[change_point_two] = rl.Vector2MoveTowards(
+		points[change_point_two],
+		{0, 0},
+		change_point_two_move,
+	)
+
+	if change_point_three == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_three_move)
+	points[change_point_three] = rl.Vector2MoveTowards(
+		points[change_point_three],
+		{0, 0},
+		change_point_three_move,
+	)
 
 	return points
 }

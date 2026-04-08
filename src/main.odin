@@ -51,23 +51,21 @@ main :: proc() {
 	player: Player
 	player.pos = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}
 
-	bullets := make([dynamic]Bullet)
-	defer delete(bullets)
+	bullets: [dynamic; BULLET_MAX]Bullet
 
-	asteroids := make([dynamic]Asteroid)
-	defer delete(asteroids)
+	asteroids: [dynamic; ASTEROID_MAX]Asteroid
 
 	particles := make([dynamic]Particle)
 	defer delete(particles)
 
-	menu_asteroids: [MAX_ASTEROIDS]Asteroid
-	for i in 0 ..< MAX_ASTEROIDS {
+	menu_asteroids: [ASTEROID_SOFT_MAX]Asteroid
+	for i in 0 ..< ASTEROID_SOFT_MAX {
 		menu_asteroids[i] = make_asteroid_rand()
 	}
 
-	asteroid_spawn_counter: uint = ASTEROID_DEFAULT_SPAWN_COUNTER
-	score: uint = 0
-	restart_delay: uint = 0
+	asteroid_spawn_counter: uint = ASTEROID_MIN_DELAY
+	score: uint
+	restart_delay: uint
 
 	// Initialize raylib window
 	rl.SetTraceLogLevel(.WARNING)
@@ -147,31 +145,22 @@ main :: proc() {
 // Updates the state of the game
 update_game :: proc(
 	player: ^Player,
-	bullets: ^[dynamic]Bullet,
-	asteroids: ^[dynamic]Asteroid,
+	bullets: ^[dynamic; BULLET_MAX]Bullet,
+	asteroids: ^[dynamic; ASTEROID_MAX]Asteroid,
 	particles: ^[dynamic]Particle,
 	asteroid_spawn_counter: ^uint,
 	score: ^uint,
 	dt: f32,
 ) {
-	if player.state == .Alive {
-		// Get keyboard input
-		if rl.IsKeyDown(.UP) do player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, player.angle)
-		// if rl.IsKeyDown(.S) do player.vel = rl.Vector2MoveTowards(player.vel, {0, 0}, PLAYER_SPEED / 3)
-		if rl.IsKeyDown(.LEFT) do player.angle -= PLAYER_ROTATION_AMOUNT
-		if rl.IsKeyDown(.RIGHT) do player.angle += PLAYER_ROTATION_AMOUNT
-		if rl.IsKeyPressed(.SPACE) do append(bullets, make_bullet(player^))
-	}
-
 	// Update game objects
-	if asteroid_spawn_counter^ == 0 && len(asteroids) < MAX_ASTEROIDS {
+	if asteroid_spawn_counter^ == 0 && len(asteroids) < ASTEROID_SOFT_MAX {
 		append(asteroids, make_asteroid_rand())
 		asteroid_spawn_counter^ = uint(rand.int_range(ASTEROID_MIN_DELAY, ASTEROID_MAX_DELAY))
-	} else if asteroid_spawn_counter^ > 0 && len(asteroids) < MAX_ASTEROIDS do asteroid_spawn_counter^ -= 1
+	} else if asteroid_spawn_counter^ > 0 && len(asteroids) < ASTEROID_SOFT_MAX do asteroid_spawn_counter^ -= 1
 
-	update_player(player, dt, asteroids[:], particles)
+	update_player(player, asteroids[:], bullets, particles, dt)
 	update_bullets(bullets, dt)
-	update_asteroids(asteroids, dt, bullets, particles, score)
+	update_asteroids(asteroids, bullets, particles, dt, score)
 	update_particles(particles, dt)
 }
 
@@ -230,8 +219,8 @@ draw_menu :: proc(high_score: uint) {
 // Fully resets the state of the game
 reset_game_full :: proc(
 	player: ^Player,
-	bullets: ^[dynamic]Bullet,
-	asteroids: ^[dynamic]Asteroid,
+	bullets: ^[dynamic; BULLET_MAX]Bullet,
+	asteroids: ^[dynamic; ASTEROID_MAX]Asteroid,
 	particles: ^[dynamic]Particle,
 	asteroid_spawn_counter: ^uint,
 ) {
@@ -246,22 +235,21 @@ reset_game_full :: proc(
 
 	// Resets bullets
 	clear(bullets)
-	shrink(bullets)
 
 	// Resets asteroids
 	clear(asteroids)
-	shrink(asteroids)
-	asteroid_spawn_counter^ = 100
+	asteroid_spawn_counter^ = ASTEROID_MIN_DELAY
 
 	// Resets particles
 	clear(particles)
 	shrink(particles)
 }
 
+// Resets the game for respawn
 reset_game_respawn :: proc(
 	player: ^Player,
-	bullets: ^[dynamic]Bullet,
-	asteroids: ^[dynamic]Asteroid,
+	bullets: ^[dynamic; BULLET_MAX]Bullet,
+	asteroids: ^[dynamic; ASTEROID_MAX]Asteroid,
 	particles: ^[dynamic]Particle,
 	asteroid_spawn_counter: ^uint,
 ) {
@@ -274,12 +262,10 @@ reset_game_respawn :: proc(
 
 	// Resets bullets
 	clear(bullets)
-	shrink(bullets)
 
 	// Resets asteroids
 	clear(asteroids)
-	shrink(asteroids)
-	asteroid_spawn_counter^ = 100
+	asteroid_spawn_counter^ = ASTEROID_MIN_DELAY
 
 	// Resets particles
 	clear(particles)
