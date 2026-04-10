@@ -103,49 +103,43 @@ check_player_asteroid_collision :: proc(
 }
 
 // Creates particles for player destructoin
-make_player_particles :: proc(particles: ^[dynamic]Particle, player: Player) {
+make_player_particles :: proc(state: ^State) {
 	for _ in 0 ..< PLAYER_PARTICLE_COUNT {
-		append(particles, make_particle(player.pos, PLAYER_SCALE * 2))
+		append(&state.particles, make_particle(state.player.pos, PLAYER_SCALE * 2))
 	}
 }
 
 // Updates the player
-update_player :: proc(
-	player: ^Player,
-	asteroids: []Asteroid,
-	bullets: ^[dynamic; BULLET_MAX]Bullet,
-	particles: ^[dynamic]Particle,
-	dt: f32,
-) {
-	if player.state == .Alive {
+update_player :: proc(state: ^State, dt: f32) {
+	if state.player.state == .Alive {
 		// Player input
-		if rl.IsKeyDown(.UP) do player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, player.angle)
-		if rl.IsKeyDown(.LEFT) do player.angle -= PLAYER_ROTATION_AMOUNT
-		if rl.IsKeyDown(.RIGHT) do player.angle += PLAYER_ROTATION_AMOUNT
-		if rl.IsKeyPressed(.SPACE) && player.shoot_timer == 0 {
-			append(bullets, make_bullet(player^))
-			player.shoot_timer = PLAYER_SHOOT_DELAY
+		if rl.IsKeyDown(.UP) do state.player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, state.player.angle)
+		if rl.IsKeyDown(.LEFT) do state.player.angle -= PLAYER_ROTATION_AMOUNT
+		if rl.IsKeyDown(.RIGHT) do state.player.angle += PLAYER_ROTATION_AMOUNT
+		if rl.IsKeyPressed(.SPACE) && state.player.shoot_timer == 0 {
+			append(&state.bullets, make_bullet(state.player))
+			state.player.shoot_timer = PLAYER_SHOOT_DELAY
 		}
 
-		clamp_speed(player)
-		player.pos += player.vel * dt
-		if player.shoot_timer > 0 do player.shoot_timer -= 1
+		clamp_speed(&state.player)
+		state.player.pos += state.player.vel * dt
+		if state.player.shoot_timer > 0 do state.player.shoot_timer -= 1
 
-		wrap_position(player)
-		wrap_angle(player)
+		wrap_position(&state.player)
+		wrap_angle(&state.player)
 
-		if check_player_asteroid_collision(player, asteroids, particles) {
-			player.state = .Dead
-			make_player_particles(particles, player^)
+		if check_player_asteroid_collision(&state.player, state.asteroids[:], &state.particles) {
+			state.player.state = .Dead
+			make_player_particles(state)
 
-			player.pos = {-100, -100}
-			player.vel = {0, 0}
-			player.shoot_timer = 1
-			player.death_timer = PLAYER_DEATH_DELAY
-			if player.lives > 0 do player.lives -= 1
+			state.player.pos = {-100, -100}
+			state.player.vel = {0, 0}
+			state.player.shoot_timer = 1
+			state.player.death_timer = PLAYER_DEATH_DELAY
+			if state.player.lives > 0 do state.player.lives -= 1
 		}
-	} else if player.death_timer > 0 {
-		player.death_timer -= 1
+	} else if state.player.death_timer > 0 {
+		state.player.death_timer -= 1
 	}
 }
 

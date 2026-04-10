@@ -25,8 +25,8 @@ make_bullet :: proc(player: Player) -> Bullet {
 }
 
 // Updates bullets
-update_bullets :: proc(bullets: ^[dynamic; BULLET_MAX]Bullet, dt: f32) {
-	for &bullet, index in bullets {
+update_bullets :: proc(state: ^State, dt: f32) {
+	for &bullet, index in state.bullets {
 		bullet.pos += bullet.vel * dt
 
 		// Remove if off screen
@@ -34,7 +34,7 @@ update_bullets :: proc(bullets: ^[dynamic; BULLET_MAX]Bullet, dt: f32) {
 		   bullet.pos.x > WINDOW_WIDTH ||
 		   bullet.pos.y < 0 ||
 		   bullet.pos.y > WINDOW_HEIGHT {
-			unordered_remove(bullets, index)
+			unordered_remove(&state.bullets, index)
 		}
 	}
 }

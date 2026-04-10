@@ -182,11 +182,12 @@ draw_asteroids_wrapping :: proc(asteroid: Asteroid) {
 // Checks if an asteroid is colliding with a bullet
 check_asteroid_bullet_collision :: proc(
 	asteroid: Asteroid,
-	bullets: ^[dynamic; BULLET_MAX]Bullet,
+	bullets: []Bullet,
 ) -> (
 	hit: bool,
+	bullet_index: int,
 ) {
-	for bullet, i in bullets {
+	for bullet, index in bullets {
 		asteroid := asteroid
 		for &point in asteroid.base_points {
 			point =
@@ -219,14 +220,14 @@ check_asteroid_bullet_collision :: proc(
 			)
 
 		if collision {
-			unordered_remove(bullets, i)
+			bullet_index = index
 			hit = true
 			break
 		}
 
 	}
 
-	return hit
+	return hit, bullet_index
 }
 
 // Creates particles for asteroid destruction
@@ -237,34 +238,33 @@ make_asteroid_particles :: proc(particles: ^[dynamic]Particle, asteroid: Asteroi
 }
 
 // Updates asteroids
-update_asteroids :: proc(
-	asteroids: ^[dynamic; ASTEROID_MAX]Asteroid,
-	bullets: ^[dynamic; BULLET_MAX]Bullet,
-	particles: ^[dynamic]Particle,
-	dt: f32,
-	score: ^uint,
-) {
+update_asteroids :: proc(state: ^State, dt: f32) {
 	remove_indices := make([dynamic]uint, context.temp_allocator)
 
-	for &asteroid, index in asteroids {
+	for &asteroid, index in state.asteroids {
 		asteroid.pos += asteroid.vel * dt
 		asteroid.angle += asteroid.rotation_speed
 		wrap_angle(&asteroid)
 		wrap_position(&asteroid)
 
-		if check_asteroid_bullet_collision(asteroid, bullets) {
-			make_asteroid_particles(particles, asteroid)
+		if hit, bullet_index := check_asteroid_bullet_collision(asteroid, state.bullets[:]); hit {
+			unordered_remove(&state.bullets, bullet_index)
+			make_asteroid_particles(&state.particles, asteroid)
 			if asteroid.size != .Small {
-				append(asteroids, make_asteroid_child(asteroid), make_asteroid_child(asteroid))
+				append(
+					&state.asteroids,
+					make_asteroid_child(asteroid),
+					make_asteroid_child(asteroid),
+				)
 			}
 			append(&remove_indices, uint(index))
-			score^ += uint(ASTEROID_SIZE_VALUE[asteroid.size])
+			state.score += uint(ASTEROID_SIZE_VALUE[asteroid.size])
 		}
 	}
 
 	slice.reverse(remove_indices[:])
 	for index in remove_indices {
-		unordered_remove(asteroids, index)
+		unordered_remove(&state.asteroids, index)
 	}
 }
 
@@ -280,12 +280,12 @@ update_menu_asteroids :: proc(asteroids: []Asteroid, dt: f32) {
 
 // Creates a normal decagon
 make_base_decagon :: proc "contextless" () -> (points: [10]rl.Vector2) {
-	for i in 1 ..= 10 {
-		inner := f32(i) * rl.PI / 5
+	for index in 1 ..= 10 {
+		inner := f32(index) * rl.PI / 5
 		point_cos := math.cos_f32(inner)
 		point_sin := math.sin_f32(inner)
 		point := rl.Vector2{point_cos, point_sin}
-		points[i - 1] = point
+		points[index - 1] = point
 	}
 
 	return points

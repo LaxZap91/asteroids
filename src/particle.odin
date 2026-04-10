@@ -52,10 +52,10 @@ draw_particles :: proc(particles: []Particle) {
 }
 
 // Updates particles
-update_particles :: proc(particles: ^[dynamic]Particle, dt: f32) {
+update_particles :: proc(state: ^State, dt: f32) {
 	remove_indices := make([dynamic]uint, context.temp_allocator)
 
-	for &particle, index in particles {
+	for &particle, index in state.particles {
 		particle.pos += particle.vel * dt
 		particle.timer -= 1
 
@@ -66,8 +66,8 @@ update_particles :: proc(particles: ^[dynamic]Particle, dt: f32) {
 
 	slice.reverse(remove_indices[:])
 	for index in remove_indices {
-		unordered_remove(particles, index)
+		unordered_remove(&state.particles, index)
 	}
 
-	shrink(particles)
+	shrink(&state.particles)
 }
