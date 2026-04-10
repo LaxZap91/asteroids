@@ -16,9 +16,9 @@ ASTEROID_MAX :: ASTEROID_SOFT_MAX * 4
 // Border between corner that asteroids spawn in
 ASTEROID_CORNER_SIZE :: 75
 // Minimum speed that an asteroid can move at
-ASTEROID_MIN_SPEED :: 5 //400
+ASTEROID_MIN_SPEED :: 400
 // Maximum speed that an asteroid can move at
-ASTEROID_MAX_SPEED :: 5 //600
+ASTEROID_MAX_SPEED :: 600
 // Number of particles to spawn on destruction
 ASTEROID_PARTICLE_COUNT :: 30
 // Absolute value of range of values that an asteroid can
