@@ -28,15 +28,22 @@ main :: proc() {
 		}
 	}
 
-	// Initialize game state
-	state := make_state()
-	defer delete_state(&state)
-
 	// Initialize raylib window
 	rl.SetTraceLogLevel(.WARNING)
 	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_UNDECORATED})
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Asteroids")
+	defer rl.CloseWindow()
+	rl.InitAudioDevice()
+	defer rl.CloseAudioDevice()
 	rl.SetTargetFPS(TARGET_FPS)
+
+	// Initialize game state
+	state := make_state()
+	defer delete_state(&state)
+
+	// Initialize audio
+	sounds := make_sounds()
+	defer delete_sounds(&sounds)
 
 	// Game loop
 	for !rl.WindowShouldClose() {
@@ -44,11 +51,11 @@ main :: proc() {
 
 		// Update game
 		if state.game_screen == .GAME {
-			update_game(&state, dt)
+			update_game(&state, sounds, dt)
 		} else if state.game_screen == .MENU {
-			update_menu(&state, dt)
+			update_menu(&state, sounds, dt)
 		} else if state.game_screen == .HELP {
-			update_help(&state, dt)
+			update_help(&state, sounds, dt)
 		}
 
 		rl.BeginDrawing()
@@ -67,6 +74,4 @@ main :: proc() {
 
 		free_all(context.temp_allocator)
 	}
-
-	rl.CloseWindow()
 }

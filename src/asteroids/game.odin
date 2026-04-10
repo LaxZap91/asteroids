@@ -5,6 +5,8 @@ import "core:math/rand"
 import "core:strings"
 import rl "vendor:raylib"
 
+import "../assets"
+
 // Font sizes
 FONT_LARGE :: 300
 FONT_MEDIUM :: 100
@@ -31,6 +33,12 @@ State :: struct {
 	asteroid_spawn_counter: uint,
 }
 
+Sounds :: struct {
+	shoot:     rl.Sound,
+	explosion: rl.Sound,
+	select:    rl.Sound,
+}
+
 // Creates and initializes state
 make_state :: proc() -> (state: State) {
 	state.player.pos = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}
@@ -50,12 +58,45 @@ delete_state :: proc(state: ^State) {
 	delete(state.particles)
 }
 
+// Creates and initialzes sounds
+make_sounds :: proc() -> (sounds: Sounds) {
+	// Load shoot sound
+	shoot_wave := rl.LoadWaveFromMemory(assets.SHOOT_EXT, assets.SHOOT_PTR, assets.SHOOT_SIZE)
+	defer rl.UnloadWave(shoot_wave)
+	shoot_sound := rl.LoadSoundFromWave(shoot_wave)
+
+	// Load explosion sound
+	explosion_wave := rl.LoadWaveFromMemory(
+		assets.EXPLOSION_EXT,
+		assets.EXPLOSION_PTR,
+		assets.EXPLOSION_SIZE,
+	)
+	defer rl.UnloadWave(explosion_wave)
+	explosion_sound := rl.LoadSoundFromWave(explosion_wave)
+
+	// Load select sound
+	select_wave := rl.LoadWaveFromMemory(assets.SELECT_EXT, assets.SELECT_PTR, assets.SELECT_SIZE)
+	defer rl.UnloadWave(select_wave)
+	select_sound := rl.LoadSoundFromWave(select_wave)
+
+	return {shoot_sound, explosion_sound, select_sound}
+}
+
+// Unloads sounds
+delete_sounds :: proc(sounds: ^Sounds) {
+	rl.UnloadSound(sounds.shoot)
+	rl.UnloadSound(sounds.explosion)
+	rl.UnloadSound(sounds.select)
+}
+
 // Updates the state of the menu
-update_menu :: proc(state: ^State, dt: f32) {
+update_menu :: proc(state: ^State, sounds: Sounds, dt: f32) {
 	if rl.IsKeyDown(.H) {
 		state.game_screen = .HELP
+		rl.PlaySound(sounds.select)
 	} else if state.restart_delay == 0 && rl.IsKeyDown(.SPACE) {
 		reset_game_full(state)
+		rl.PlaySound(sounds.select)
 	} else if state.restart_delay > 0 {
 		state.restart_delay -= 1
 	}
@@ -64,16 +105,17 @@ update_menu :: proc(state: ^State, dt: f32) {
 }
 
 // Updates the state the the help menu
-update_help :: proc(state: ^State, dt: f32) {
+update_help :: proc(state: ^State, sounds: Sounds, dt: f32) {
 	if rl.IsKeyDown(.BACKSPACE) {
 		state.game_screen = .MENU
+		rl.PlaySound(sounds.select)
 	}
 
 	update_menu_asteroids(state.menu_asteroids[:], dt)
 }
 
 // Updates the state of the game
-update_game :: proc(state: ^State, dt: f32) {
+update_game :: proc(state: ^State, sounds: Sounds, dt: f32) {
 	if state.player.state == .Dead && state.player.death_timer == 0 {
 		if state.player.lives == 0 {
 			state.game_screen = .MENU
@@ -95,9 +137,9 @@ update_game :: proc(state: ^State, dt: f32) {
 		state.asteroid_spawn_counter -= 1
 	}
 
-	update_player(state, dt)
+	update_player(state, sounds, dt)
 	update_bullets(state, dt)
-	update_asteroids(state, dt)
+	update_asteroids(state, sounds, dt)
 	update_particles(state, dt)
 }
 
