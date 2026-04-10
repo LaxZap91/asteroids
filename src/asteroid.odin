@@ -16,9 +16,9 @@ ASTEROID_MAX :: ASTEROID_SOFT_MAX * 4
 // Border between corner that asteroids spawn in
 ASTEROID_CORNER_SIZE :: 75
 // Minimum speed that an asteroid can move at
-ASTEROID_MIN_SPEED :: 400
+ASTEROID_MIN_SPEED :: 5 //400
 // Maximum speed that an asteroid can move at
-ASTEROID_MAX_SPEED :: 600
+ASTEROID_MAX_SPEED :: 5 //600
 // Number of particles to spawn on destruction
 ASTEROID_PARTICLE_COUNT :: 30
 // Absolute value of range of values that an asteroid can
@@ -161,7 +161,7 @@ draw_asteroids_wrapping :: proc(asteroid: Asteroid) {
 		rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
 	}
 
-	// Draws asteroid sprite wapping around x-axis
+	// Draws asteroid sprite wapping around y-axis
 	if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
 		points := asteroid.base_points
 		for &point in points {
@@ -179,6 +179,32 @@ draw_asteroids_wrapping :: proc(asteroid: Asteroid) {
 	}
 }
 
+// Checks if a bullets corners are inside of a given polygon
+check_poly_bullet_collision :: proc(points: [^]rl.Vector2, bullet: Bullet) -> bool {
+	return(
+		rl.CheckCollisionPointPoly(
+			{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
+			points,
+			11,
+		) ||
+		rl.CheckCollisionPointPoly(
+			{bullet.pos.x + (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
+			points,
+			11,
+		) ||
+		rl.CheckCollisionPointPoly(
+			{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y + (BULLET_SIZE / 2)},
+			points,
+			11,
+		) ||
+		rl.CheckCollisionPointPoly(
+			{bullet.pos.x + (BULLET_SIZE / 2), bullet.pos.y + (BULLET_SIZE / 2)},
+			points,
+			11,
+		) \
+	)
+}
+
 // Checks if an asteroid is colliding with a bullet
 check_asteroid_bullet_collision :: proc(
 	asteroid: Asteroid,
@@ -187,44 +213,75 @@ check_asteroid_bullet_collision :: proc(
 	hit: bool,
 	bullet_index: int,
 ) {
+	asteroid := asteroid
+	for &point in asteroid.base_points {
+		point =
+			rl.Vector2Rotate(point * ASTEROID_SIZE_VALUE[asteroid.size], asteroid.angle) +
+			asteroid.pos
+	}
+
+	points := raw_data(asteroid.base_points[:])
+
 	for bullet, index in bullets {
-		asteroid := asteroid
-		for &point in asteroid.base_points {
-			point =
-				rl.Vector2Rotate(point * ASTEROID_SIZE_VALUE[asteroid.size], asteroid.angle) +
-				asteroid.pos
-		}
-
-		points := raw_data(asteroid.base_points[:])
-
-		collision :=
-			rl.CheckCollisionPointPoly(
-				{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
-				points,
-				11,
-			) ||
-			rl.CheckCollisionPointPoly(
-				{bullet.pos.x + (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
-				points,
-				11,
-			) ||
-			rl.CheckCollisionPointPoly(
-				{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y + (BULLET_SIZE / 2)},
-				points,
-				11,
-			) ||
-			rl.CheckCollisionPointPoly(
-				{bullet.pos.x + (BULLET_SIZE / 2), bullet.pos.y + (BULLET_SIZE / 2)},
-				points,
-				11,
-			)
-
-		if collision {
+		if check_poly_bullet_collision(points, bullet) {
 			bullet_index = index
 			hit = true
 			break
 		}
 
+		// Checks if asteroid is wrapping around x-axis
+		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				bullet_index = index
+				hit = true
+				break
+			}
+		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x - WINDOW_WIDTH, point.y}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				bullet_index = index
+				hit = true
+				break
+			}
+		}
+
+		// Checks if asteroid is wrapping around y-axis
+		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x, point.y + WINDOW_HEIGHT}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				bullet_index = index
+				hit = true
+				break
+			}
+		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x, point.y - WINDOW_HEIGHT}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(points, bullet) {
+				bullet_index = index
+				hit = true
+				break
+			}
+		}
 	}
 
 	return hit, bullet_index
@@ -239,7 +296,7 @@ make_asteroid_particles :: proc(particles: ^[dynamic]Particle, asteroid: Asteroi
 
 // Updates asteroids
 update_asteroids :: proc(state: ^State, dt: f32) {
-	remove_indices := make([dynamic]uint, context.temp_allocator)
+	remove_indices := make([dynamic]int, context.temp_allocator)
 
 	for &asteroid, index in state.asteroids {
 		asteroid.pos += asteroid.vel * dt
@@ -256,8 +313,9 @@ update_asteroids :: proc(state: ^State, dt: f32) {
 					make_asteroid_child(asteroid),
 					make_asteroid_child(asteroid),
 				)
+
 			}
-			append(&remove_indices, uint(index))
+			append(&remove_indices, index)
 			state.score += uint(ASTEROID_SIZE_VALUE[asteroid.size])
 		}
 	}

@@ -24,7 +24,7 @@ State :: struct {
 	score:                  uint,
 	player:                 Player,
 	bullets:                [dynamic; BULLET_MAX]Bullet,
-	asteroids:              [dynamic; BULLET_MAX]Asteroid,
+	asteroids:              [dynamic; ASTEROID_MAX]Asteroid,
 	menu_asteroids:         [ASTEROID_SOFT_MAX]Asteroid,
 	particles:              [dynamic]Particle,
 	restart_delay:          uint,

@@ -53,14 +53,15 @@ draw_particles :: proc(particles: []Particle) {
 
 // Updates particles
 update_particles :: proc(state: ^State, dt: f32) {
-	remove_indices := make([dynamic]uint, context.temp_allocator)
+	remove_indices := make([dynamic]int, context.temp_allocator)
 
 	for &particle, index in state.particles {
 		particle.pos += particle.vel * dt
+		wrap_position(&particle)
 		particle.timer -= 1
 
 		if particle.timer == 0 {
-			append(&remove_indices, uint(index))
+			append(&remove_indices, index)
 		}
 	}
 

@@ -1,5 +1,6 @@
 package asteroids
 
+import "core:slice"
 import rl "vendor:raylib"
 
 // Speed that the bullet moves
@@ -26,6 +27,8 @@ make_bullet :: proc(player: Player) -> Bullet {
 
 // Updates bullets
 update_bullets :: proc(state: ^State, dt: f32) {
+	remove_indices := make([dynamic]int, context.temp_allocator)
+
 	for &bullet, index in state.bullets {
 		bullet.pos += bullet.vel * dt
 
@@ -34,8 +37,13 @@ update_bullets :: proc(state: ^State, dt: f32) {
 		   bullet.pos.x > WINDOW_WIDTH ||
 		   bullet.pos.y < 0 ||
 		   bullet.pos.y > WINDOW_HEIGHT {
-			unordered_remove(&state.bullets, index)
+			append(&remove_indices, index)
 		}
+	}
+
+	slice.reverse(remove_indices[:])
+	for index in remove_indices {
+		unordered_remove(&state.bullets, index)
 	}
 }
 
