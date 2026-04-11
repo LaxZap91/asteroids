@@ -4,6 +4,8 @@ import "core:fmt"
 import "core:mem"
 import rl "vendor:raylib"
 
+import "../assets"
+
 // Width of the game window
 WINDOW_WIDTH :: 2000
 // Height of the game window
@@ -32,11 +34,18 @@ main :: proc() {
 	rl.SetTraceLogLevel(.WARNING)
 	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_UNDECORATED, .WINDOW_HIDDEN})
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Asteroids")
-	rl.HideCursor()
 	defer rl.CloseWindow()
+	rl.HideCursor()
+	rl.SetTargetFPS(TARGET_FPS)
+
+	// Sets icon
+	icon := rl.LoadImageFromMemory(assets.LOGO_EXT, assets.LOGO_PTR, assets.LOGO_SIZE)
+	rl.SetWindowIcon(icon)
+	rl.UnloadImage(icon)
+
+	// Initializes raylib audio
 	rl.InitAudioDevice()
 	defer rl.CloseAudioDevice()
-	rl.SetTargetFPS(TARGET_FPS)
 
 	// Initialize game state
 	state := make_state()
