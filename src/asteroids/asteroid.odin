@@ -38,6 +38,12 @@ ASTEROID_SIZE_VALUE := [ASTEROID_SIZE]f32 {
 	.Medium = 45,
 	.Small  = 30,
 }
+// Asteroid point values
+ASTEROID_POINT_VALUE := [ASTEROID_SIZE]f32 {
+	.Large  = 30,
+	.Medium = 45,
+	.Small  = 60,
+}
 // Maximum distance points will move if they are
 // chosen to change
 ASTEROID_POINT_EDGE_MOVE_MAX :: 0.45
@@ -105,6 +111,21 @@ make_asteroid_rand :: proc() -> Asteroid {
 		rand.float32_range(-ASTEROID_ROTATION_SPEED, ASTEROID_ROTATION_SPEED) * rl.DEG2RAD
 	points := make_points()
 
+	return {{pos, vel, angle}, rotation_speed, size, points}
+}
+
+// Makes an asteroid that spawns from the edge of the screen
+make_asteroid_menu :: proc() -> Asteroid {
+	x := rand.float32_range(0, WINDOW_WIDTH)
+	y := rand.float32_range(0, WINDOW_HEIGHT)
+	pos := rl.Vector2{x, y}
+	angle := rand.float32_range(0, 2 * rl.PI)
+	speed := rand.float32_range(ASTEROID_MIN_SPEED / 2, ASTEROID_MAX_SPEED / 2)
+	vel := rl.Vector2Rotate(rl.Vector2{0, -1} * speed, angle)
+	size := rand.choice_enum(ASTEROID_SIZE)
+	rotation_speed :=
+		rand.float32_range(-ASTEROID_ROTATION_SPEED, ASTEROID_ROTATION_SPEED) * rl.DEG2RAD
+	points := make_points()
 	return {{pos, vel, angle}, rotation_speed, size, points}
 }
 
@@ -309,11 +330,11 @@ make_asteroid_particles :: proc(particles: ^[dynamic]Particle, asteroid: Asteroi
 }
 
 // Updates asteroids
-update_asteroids :: proc(state: ^State, sounds: Sounds, dt: f32) {
+update_asteroids :: proc(state: ^State, sounds: Sounds) {
 	remove_indices := make([dynamic]int, context.temp_allocator)
 
 	for &asteroid, index in state.asteroids {
-		asteroid.pos += asteroid.vel * dt
+		asteroid.pos += asteroid.vel * state.dt
 		asteroid.angle += asteroid.rotation_speed
 		wrap_angle(&asteroid)
 		wrap_position(&asteroid)
@@ -330,7 +351,7 @@ update_asteroids :: proc(state: ^State, sounds: Sounds, dt: f32) {
 			}
 			rl.PlaySound(sounds.explosion)
 			append(&remove_indices, index)
-			state.score += uint(ASTEROID_SIZE_VALUE[asteroid.size])
+			state.score += uint(ASTEROID_POINT_VALUE[asteroid.size])
 		}
 	}
 
@@ -341,9 +362,9 @@ update_asteroids :: proc(state: ^State, sounds: Sounds, dt: f32) {
 }
 
 // Updates asteroids
-update_menu_asteroids :: proc(asteroids: []Asteroid, dt: f32) {
-	for &asteroid in asteroids {
-		asteroid.pos += asteroid.vel * dt
+update_menu_asteroids :: proc(state: ^State) {
+	for &asteroid in state.menu_asteroids {
+		asteroid.pos += asteroid.vel * state.dt
 		asteroid.angle += asteroid.rotation_speed
 		wrap_angle(&asteroid)
 		wrap_position(&asteroid)

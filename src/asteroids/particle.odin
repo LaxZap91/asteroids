@@ -52,11 +52,11 @@ draw_particles :: proc(particles: []Particle) {
 }
 
 // Updates particles
-update_particles :: proc(state: ^State, dt: f32) {
+update_particles :: proc(state: ^State) {
 	remove_indices := make([dynamic]int, context.temp_allocator)
 
 	for &particle, index in state.particles {
-		particle.pos += particle.vel * dt
+		particle.pos += particle.vel * state.dt
 		wrap_position(&particle)
 		particle.timer -= 1
 

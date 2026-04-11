@@ -32,6 +32,8 @@ STAGE_TIME :: 60 * 25
 STAGE_NEXT_POINTS :: 500
 // How many points are lost upon death
 PLAYER_DEATH_LOSS_POINTS :: 250
+// How many frames before you can start the game
+RESTART_DELAY :: 10
 
 State :: struct {
 	game_screen:            GAME_SCREEN,
@@ -46,6 +48,7 @@ State :: struct {
 	particles:              [dynamic]Particle,
 	restart_delay:          uint,
 	asteroid_spawn_counter: uint,
+	dt:						f32,
 }
 
 Sounds :: struct {
@@ -60,11 +63,12 @@ make_state :: proc() -> (state: State) {
 	state.particles = make([dynamic]Particle)
 
 	for i in 0 ..< ASTEROID_SOFT_MAX {
-		state.menu_asteroids[i] = make_asteroid_rand()
+		state.menu_asteroids[i] = make_asteroid_menu()
 	}
 
 	state.asteroid_spawn_counter = ASTEROID_MIN_DELAY
 	state.stage_timer = STAGE_TIME
+	state.dt = 0
 
 	return
 }
@@ -106,7 +110,7 @@ delete_sounds :: proc(sounds: ^Sounds) {
 }
 
 // Updates the state of the menu
-update_menu :: proc(state: ^State, sounds: Sounds, dt: f32) {
+update_menu :: proc(state: ^State, sounds: Sounds) {
 	if rl.IsKeyPressed(.H) {
 		state.game_screen = .HELP
 		rl.PlaySound(sounds.select)
@@ -117,21 +121,29 @@ update_menu :: proc(state: ^State, sounds: Sounds, dt: f32) {
 		state.restart_delay -= 1
 	}
 
-	update_menu_asteroids(state.menu_asteroids[:], dt)
+	update_menu_asteroids(state)
 }
 
 // Updates the state the the help menu
-update_help :: proc(state: ^State, sounds: Sounds, dt: f32) {
+update_help :: proc(state: ^State, sounds: Sounds) {
 	if rl.IsKeyPressed(.BACKSPACE) {
 		state.game_screen = .MENU
 		rl.PlaySound(sounds.select)
 	}
 
-	update_menu_asteroids(state.menu_asteroids[:], dt)
+	update_menu_asteroids(state)
 }
 
 // Updates the state of the game
-update_game :: proc(state: ^State, sounds: Sounds, dt: f32) {
+update_game :: proc(state: ^State, sounds: Sounds) {
+	if rl.IsKeyPressed(.BACKSPACE) {
+		state.game_screen = .MENU
+		state.score = 0
+		state.restart_delay = RESTART_DELAY
+		rl.PlaySound(sounds.select)
+	}
+
+	// Respawns or moves to menu if player is dead
 	if state.player.state == .Dead && state.player.death_timer == 0 {
 		if state.player.lives == 0 {
 			state.game_screen = .MENU
@@ -139,7 +151,7 @@ update_game :: proc(state: ^State, sounds: Sounds, dt: f32) {
 				state.high_score = state.score
 			}
 			state.score = 0
-			state.restart_delay = 10
+			state.restart_delay = RESTART_DELAY
 		} else {
 			reset_game_respawn(state)
 		}
@@ -172,10 +184,10 @@ update_game :: proc(state: ^State, sounds: Sounds, dt: f32) {
 		state.asteroid_spawn_counter -= 1
 	}
 
-	update_player(state, sounds, dt)
-	update_bullets(state, dt)
-	update_asteroids(state, sounds, dt)
-	update_particles(state, dt)
+	update_player(state, sounds)
+	update_bullets(state)
+	update_asteroids(state, sounds)
+	update_particles(state)
 }
 
 // Draws the menu

@@ -26,11 +26,11 @@ make_bullet :: proc(player: Player) -> Bullet {
 }
 
 // Updates bullets
-update_bullets :: proc(state: ^State, dt: f32) {
+update_bullets :: proc(state: ^State) {
 	remove_indices := make([dynamic]int, context.temp_allocator)
 
 	for &bullet, index in state.bullets {
-		bullet.pos += bullet.vel * dt
+		bullet.pos += bullet.vel * state.dt
 
 		// Remove if off screen
 		if bullet.pos.x < 0 ||

@@ -60,15 +60,15 @@ main :: proc() {
 
 	// Game loop
 	for !rl.WindowShouldClose() {
-		dt := rl.GetFrameTime()
+		state.dt = rl.GetFrameTime()
 
 		// Update game
 		if state.game_screen == .GAME {
-			update_game(&state, sounds, dt)
+			update_game(&state, sounds)
 		} else if state.game_screen == .MENU {
-			update_menu(&state, sounds, dt)
+			update_menu(&state, sounds)
 		} else if state.game_screen == .HELP {
-			update_help(&state, sounds, dt)
+			update_help(&state, sounds)
 		}
 
 		rl.BeginDrawing()

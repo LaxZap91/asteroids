@@ -192,7 +192,7 @@ make_player_particles :: proc(state: ^State) {
 }
 
 // Updates the player
-update_player :: proc(state: ^State, sounds: Sounds, dt: f32) {
+update_player :: proc(state: ^State, sounds: Sounds) {
 	if state.player.state == .Alive {
 		// Player input
 		if rl.IsKeyDown(.UP) do state.player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, state.player.angle)
@@ -205,7 +205,7 @@ update_player :: proc(state: ^State, sounds: Sounds, dt: f32) {
 		}
 
 		clamp_speed(&state.player)
-		state.player.pos += state.player.vel * dt
+		state.player.pos += state.player.vel * state.dt
 		if state.player.shoot_timer > 0 do state.player.shoot_timer -= 1
 
 		wrap_position(&state.player)
