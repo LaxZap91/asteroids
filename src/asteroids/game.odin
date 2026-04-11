@@ -42,8 +42,8 @@ State :: struct {
 	high_score:             uint,
 	score:                  uint,
 	player:                 Player,
-	bullets:                [dynamic; BULLET_MAX]Bullet,
-	asteroids:              [dynamic; ASTEROID_MAX]Asteroid,
+	bullets:                [dynamic]Bullet,
+	asteroids:              [dynamic]Asteroid,
 	menu_asteroids:         [ASTEROID_SOFT_MAX]Asteroid,
 	particles:              [dynamic]Particle,
 	restart_delay:          uint,
@@ -169,6 +169,7 @@ update_game :: proc(state: ^State, sounds: Sounds) {
 			}
 			state.score += STAGE_NEXT_POINTS
 			state.stage_timer = STAGE_TIME
+			state.player.shield = PLAYER_SHIELD_TIME
 		}
 	}
 
@@ -300,6 +301,7 @@ reset_game_full :: proc(state: ^State) {
 	state.player.vel = {0, 0}
 	state.player.angle = 0
 	state.player.shoot_timer = 0
+	state.player.shield = 0
 	state.player.death_timer = PLAYER_DEATH_DELAY
 	state.player.lives = PLAYER_MAX_LIVES
 	state.player.state = .Alive
@@ -336,6 +338,7 @@ reset_game_respawn :: proc(state: ^State) {
 	state.player.vel = {0, 0}
 	state.player.angle = 0
 	state.player.shoot_timer = 0
+	state.player.shield = 0
 	state.player.death_timer = PLAYER_DEATH_DELAY
 	state.player.state = .Alive
 

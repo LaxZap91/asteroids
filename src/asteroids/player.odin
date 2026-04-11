@@ -1,5 +1,7 @@
 package asteroids
 
+import "core:fmt"
+import "core:slice"
 import rl "vendor:raylib"
 
 // Increment that the player angle rotates by
@@ -16,6 +18,12 @@ PLAYER_SHOOT_DELAY :: 5
 PLAYER_MAX_LIVES :: 6
 // Number of particles spawned on player death
 PLAYER_PARTICLE_COUNT :: 30
+// How long the player shield lasts
+PLAYER_SHIELD_TIME :: 2 * TARGET_FPS
+// Radius of the player shield
+PLAYER_SHIELD_RADIUS :: PLAYER_SCALE * 5
+// Color of the player shield
+PLAYER_SHIELD_COLOR :: rl.WHITE
 // Size multiplication of the player spite
 PLAYER_SCALE :: 20
 // Height of the player sprite
@@ -35,6 +43,7 @@ Player :: struct {
 	shoot_timer: uint,
 	death_timer: uint,
 	lives:       uint,
+	shield:      uint,
 	state:       PLAYER_STATE,
 }
 
@@ -184,6 +193,60 @@ check_wrapped_player_asteroid_collision :: proc(
 	return
 }
 
+check_shield_asteroid_collision :: proc(state: ^State, sounds: Sounds) {
+	remove_indices := make([dynamic]int, context.temp_allocator)
+
+	points := base_decagon
+	for &point in points {
+		point =
+			rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, state.player.angle) + state.player.pos
+	}
+	points_slice := []rl.Vector2 {
+		points[0],
+		points[1],
+		points[2],
+		points[3],
+		points[4],
+		points[5],
+		points[6],
+		points[7],
+		points[8],
+		points[9],
+		points[0],
+	}
+
+	for asteroid, index in state.asteroids {
+		asteroid_points := asteroid.base_points
+		for &point in asteroid_points {
+			point =
+				rl.Vector2Rotate(point * ASTEROID_SIZE_VALUE[asteroid.size], asteroid.angle) +
+				asteroid.pos
+
+			collision := rl.CheckCollisionPointPoly(
+				point,
+				raw_data(points_slice),
+				11,
+			)
+
+			if collision {
+				append(&remove_indices, index)
+				break
+			}
+		}
+	}
+
+	slice.reverse(remove_indices[:])
+	for index in remove_indices {
+		make_asteroid_particles(&state.particles, state.asteroids[index])
+		rl.PlaySound(sounds.explosion)
+		state.score += uint(ASTEROID_POINT_VALUE[state.asteroids[index].size])
+
+		unordered_remove(&state.asteroids, index)
+	}
+}
+
+
+
 // Creates particles for player destructoin
 make_player_particles :: proc(state: ^State) {
 	for _ in 0 ..< PLAYER_PARTICLE_COUNT {
@@ -211,7 +274,10 @@ update_player :: proc(state: ^State, sounds: Sounds) {
 		wrap_position(&state.player)
 		wrap_angle(&state.player)
 
-		if check_player_asteroid_collision(state) {
+		if state.player.shield > 0 {
+			state.player.shield -= 1
+			check_shield_asteroid_collision(state, sounds)
+		} else if check_player_asteroid_collision(state) {
 			state.player.state = .Dead
 			make_player_particles(state)
 			rl.PlaySound(sounds.explosion)
@@ -239,6 +305,155 @@ draw_player :: proc(player: Player) {
 	)
 
 	draw_player_wrapping(player, points)
+	if (player.shield > 0) {
+		draw_shield(player)
+		draw_shield_wrapping(player)
+	}
+}
+
+// Draws the player shield
+draw_shield :: proc(player: Player) {
+	points := base_decagon
+	for &point in points {
+		point = rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, player.angle) + player.pos
+	}
+
+	rl.DrawLineStrip(
+		raw_data(
+			[]rl.Vector2 {
+				points[0],
+				points[1],
+				points[2],
+				points[3],
+				points[4],
+				points[5],
+				points[6],
+				points[7],
+				points[8],
+				points[9],
+				points[0],
+			},
+		),
+		11,
+		PLAYER_SHIELD_COLOR,
+	)
+}
+
+// Draws the player shield if the player is wrapping around screen
+draw_shield_wrapping :: proc(player: Player) {
+	// Draws player sprite wapping around x-axis
+	if player.pos.x < PLAYER_SHIELD_RADIUS {
+		points := base_decagon
+		for &point in points {
+			point =
+				rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, player.angle) +
+				{player.pos.x + WINDOW_WIDTH, player.pos.y}
+		}
+
+		rl.DrawLineStrip(
+			raw_data(
+				[]rl.Vector2 {
+					points[0],
+					points[1],
+					points[2],
+					points[3],
+					points[4],
+					points[5],
+					points[6],
+					points[7],
+					points[8],
+					points[9],
+					points[0],
+				},
+			),
+			11,
+			PLAYER_SHIELD_COLOR,
+		)
+	} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
+		points := base_decagon
+		for &point in points {
+			point =
+				rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, player.angle) +
+				{player.pos.x - WINDOW_WIDTH, player.pos.y}
+		}
+
+		rl.DrawLineStrip(
+			raw_data(
+				[]rl.Vector2 {
+					points[0],
+					points[1],
+					points[2],
+					points[3],
+					points[4],
+					points[5],
+					points[6],
+					points[7],
+					points[8],
+					points[9],
+					points[0],
+				},
+			),
+			11,
+			PLAYER_SHIELD_COLOR,
+		)
+	}
+
+	// Draws player sprite wapping around y-axis
+	if player.pos.y < PLAYER_SHIELD_RADIUS {
+		points := base_decagon
+		for &point in points {
+			point =
+				rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, player.angle) +
+				{player.pos.x, player.pos.y + WINDOW_HEIGHT}
+		}
+
+		rl.DrawLineStrip(
+			raw_data(
+				[]rl.Vector2 {
+					points[0],
+					points[1],
+					points[2],
+					points[3],
+					points[4],
+					points[5],
+					points[6],
+					points[7],
+					points[8],
+					points[9],
+					points[0],
+				},
+			),
+			11,
+			PLAYER_SHIELD_COLOR,
+		)
+	} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
+		points := base_decagon
+		for &point in points {
+			point =
+				rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, player.angle) +
+				{player.pos.x, player.pos.y - WINDOW_HEIGHT}
+		}
+
+		rl.DrawLineStrip(
+			raw_data(
+				[]rl.Vector2 {
+					points[0],
+					points[1],
+					points[2],
+					points[3],
+					points[4],
+					points[5],
+					points[6],
+					points[7],
+					points[8],
+					points[9],
+					points[0],
+				},
+			),
+			11,
+			PLAYER_SHIELD_COLOR,
+		)
+	}
 }
 
 // Draws the player sprite wrapping around screen edges

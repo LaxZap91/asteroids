@@ -9,3 +9,5 @@ The classic asteroids game, written in the odin programming language
 3. `odin run src`
 
 ## TODO
+
+- Add collision checking for if sheild is wrapped around the screen
