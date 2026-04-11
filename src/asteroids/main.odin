@@ -46,6 +46,7 @@ main :: proc() {
 	sounds := make_sounds()
 	defer delete_sounds(&sounds)
 
+	// Shows window after loading data
 	rl.ClearWindowState({.WINDOW_HIDDEN})
 
 	// Game loop

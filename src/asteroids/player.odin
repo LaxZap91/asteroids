@@ -11,7 +11,7 @@ PLAYER_SPEED_CAP :: PLAYER_SPEED * 45
 // Frames before returning to menu after death
 PLAYER_DEATH_DELAY :: 150
 // Frames before player can shoot again
-PLAYER_SHOOT_DELAY :: 15
+PLAYER_SHOOT_DELAY :: 5
 // maximum number of lives player can have
 PLAYER_MAX_LIVES :: 6
 // Number of particles spawned on player death

@@ -11,8 +11,10 @@ ASTEROID_MIN_DELAY :: 90
 ASTEROID_MAX_DELAY :: 150
 // Number of asteroids on screen that stops spawning
 ASTEROID_SOFT_MAX :: 15
+// Increment that ASTEROID_SOFT_MAX increases by for every level of difficulty
+ASTEROID_MAX_INCREMENT :: 5
 // Maximum number of asteroids on screen
-ASTEROID_MAX :: ASTEROID_SOFT_MAX * 4
+ASTEROID_MAX :: (ASTEROID_SOFT_MAX + (ASTEROID_MAX_INCREMENT * 2)) * 4
 // Border between corner that asteroids spawn in
 ASTEROID_CORNER_SIZE :: 75
 // Minimum speed that an asteroid can move at

@@ -20,8 +20,23 @@ GAME_SCREEN :: enum {
 	GAME,
 }
 
+// Levels of difficult
+STAGE :: enum {
+	EASY = 0,
+	MEDIUM,
+	HARD,
+}
+// How long you have to survive to get to next stage
+STAGE_TIME :: 60 * 25
+// How many points gained when stage stage_timer hits 0
+STAGE_NEXT_POINTS :: 500
+// How many points are lost upon death
+PLAYER_DEATH_LOSS_POINTS :: 250
+
 State :: struct {
 	game_screen:            GAME_SCREEN,
+	stage:                  STAGE,
+	stage_timer:            uint,
 	high_score:             uint,
 	score:                  uint,
 	player:                 Player,
@@ -49,6 +64,7 @@ make_state :: proc() -> (state: State) {
 	}
 
 	state.asteroid_spawn_counter = ASTEROID_MIN_DELAY
+	state.stage_timer = STAGE_TIME
 
 	return
 }
@@ -129,11 +145,30 @@ update_game :: proc(state: ^State, sounds: Sounds, dt: f32) {
 		}
 	}
 
+	// Decrements stage change timer if alive
+	if state.player.state == .Alive {
+		if state.stage_timer > 0 {
+			state.stage_timer -= 1
+		} else {
+			if state.stage == .EASY {
+				state.stage = .MEDIUM
+			} else if state.stage == .MEDIUM {
+				state.stage = .HARD
+			}
+			state.score += STAGE_NEXT_POINTS
+			state.stage_timer = STAGE_TIME
+		}
+	}
+
+	asteroid_max_increment_current := ASTEROID_MAX_INCREMENT * int(state.stage)
+	asteroid_count_less_max :=
+		len(state.asteroids) < (ASTEROID_SOFT_MAX + asteroid_max_increment_current)
+
 	// Update game objects
-	if state.asteroid_spawn_counter == 0 && len(state.asteroids) < ASTEROID_SOFT_MAX {
+	if state.asteroid_spawn_counter == 0 && asteroid_count_less_max {
 		append(&state.asteroids, make_asteroid_rand())
 		state.asteroid_spawn_counter = uint(rand.int_range(ASTEROID_MIN_DELAY, ASTEROID_MAX_DELAY))
-	} else if state.asteroid_spawn_counter > 0 && len(state.asteroids) < ASTEROID_SOFT_MAX {
+	} else if state.asteroid_spawn_counter > 0 && asteroid_count_less_max {
 		state.asteroid_spawn_counter -= 1
 	}
 
@@ -245,6 +280,8 @@ draw_game :: proc(state: ^State) {
 // Fully resets the state of the game
 reset_game_full :: proc(state: ^State) {
 	state.game_screen = .GAME
+	state.stage = .EASY
+	state.stage_timer = STAGE_TIME
 
 	// Resets player
 	state.player.pos = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}
@@ -269,6 +306,20 @@ reset_game_full :: proc(state: ^State) {
 
 // Resets the game for respawn
 reset_game_respawn :: proc(state: ^State) {
+	if state.stage == .HARD {
+		state.stage = .MEDIUM
+	} else if state.stage == .MEDIUM {
+		state.stage = .EASY
+	}
+	state.stage_timer = STAGE_TIME
+
+	if state.score >= PLAYER_DEATH_LOSS_POINTS {
+		state.score -= PLAYER_DEATH_LOSS_POINTS
+	} else {
+		state.score = 0
+	}
+
+	// Resets player
 	state.player.pos = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}
 	state.player.vel = {0, 0}
 	state.player.angle = 0
