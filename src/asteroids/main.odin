@@ -30,8 +30,9 @@ main :: proc() {
 
 	// Initialize raylib window
 	rl.SetTraceLogLevel(.WARNING)
-	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_UNDECORATED})
+	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_UNDECORATED, .WINDOW_HIDDEN})
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Asteroids")
+	rl.HideCursor()
 	defer rl.CloseWindow()
 	rl.InitAudioDevice()
 	defer rl.CloseAudioDevice()
@@ -44,6 +45,8 @@ main :: proc() {
 	// Initialize audio
 	sounds := make_sounds()
 	defer delete_sounds(&sounds)
+
+	rl.ClearWindowState({.WINDOW_HIDDEN})
 
 	// Game loop
 	for !rl.WindowShouldClose() {

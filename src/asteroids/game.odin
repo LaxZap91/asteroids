@@ -91,10 +91,10 @@ delete_sounds :: proc(sounds: ^Sounds) {
 
 // Updates the state of the menu
 update_menu :: proc(state: ^State, sounds: Sounds, dt: f32) {
-	if rl.IsKeyDown(.H) {
+	if rl.IsKeyPressed(.H) {
 		state.game_screen = .HELP
 		rl.PlaySound(sounds.select)
-	} else if state.restart_delay == 0 && rl.IsKeyDown(.SPACE) {
+	} else if state.restart_delay == 0 && rl.IsKeyPressed(.SPACE) {
 		reset_game_full(state)
 		rl.PlaySound(sounds.select)
 	} else if state.restart_delay > 0 {
@@ -106,7 +106,7 @@ update_menu :: proc(state: ^State, sounds: Sounds, dt: f32) {
 
 // Updates the state the the help menu
 update_help :: proc(state: ^State, sounds: Sounds, dt: f32) {
-	if rl.IsKeyDown(.BACKSPACE) {
+	if rl.IsKeyPressed(.BACKSPACE) {
 		state.game_screen = .MENU
 		rl.PlaySound(sounds.select)
 	}
