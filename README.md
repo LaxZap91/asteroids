@@ -10,4 +10,4 @@ The classic asteroids game, written in the odin programming language
 
 ## TODO
 
-- Add collision checking for if sheild is wrapped around the screen
+- Add rendering and collision checking for opposite corner

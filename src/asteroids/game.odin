@@ -48,7 +48,7 @@ State :: struct {
 	particles:              [dynamic]Particle,
 	restart_delay:          uint,
 	asteroid_spawn_counter: uint,
-	dt:						f32,
+	dt:                     f32,
 }
 
 Sounds :: struct {

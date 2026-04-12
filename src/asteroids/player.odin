@@ -1,6 +1,5 @@
 package asteroids
 
-import "core:fmt"
 import "core:slice"
 import rl "vendor:raylib"
 
@@ -21,7 +20,7 @@ PLAYER_PARTICLE_COUNT :: 30
 // How long the player shield lasts
 PLAYER_SHIELD_TIME :: 2 * TARGET_FPS
 // Radius of the player shield
-PLAYER_SHIELD_RADIUS :: PLAYER_SCALE * 5
+PLAYER_SHIELD_RADIUS :: PLAYER_SCALE * 10
 // Color of the player shield
 PLAYER_SHIELD_COLOR :: rl.WHITE
 // Size multiplication of the player spite
@@ -92,7 +91,8 @@ generate_player_collision_points :: proc(player: Player) -> [6]rl.Vector2 {
 		rl.Vector2Rotate(0.5 * (main_points[0] - main_points[1]), player.angle) + player.pos
 	right_center :=
 		rl.Vector2Rotate(0.5 * (main_points[0] - main_points[2]), player.angle) + player.pos
-	return [6]rl.Vector2 {
+
+	collision_points := [6]rl.Vector2 {
 		main_points[0],
 		main_points[1],
 		main_points[2],
@@ -100,6 +100,23 @@ generate_player_collision_points :: proc(player: Player) -> [6]rl.Vector2 {
 		left_center,
 		right_center,
 	}
+
+	// Wraps points around the screen
+	for &point in collision_points {
+		if point.x < 0 {
+			point.x += WINDOW_WIDTH
+		} else if point.x > WINDOW_WIDTH {
+			point.x -= WINDOW_WIDTH
+		}
+
+		if point.y < 0 {
+			point.y += WINDOW_HEIGHT
+		} else if point.y > WINDOW_HEIGHT {
+			point.y -= WINDOW_HEIGHT
+		}
+	}
+
+	return collision_points
 }
 
 // Checks if the player is colliding with an asteroid
@@ -116,17 +133,16 @@ check_player_asteroid_collision :: proc(state: ^State) -> (hit: bool) {
 				asteroid.pos
 		}
 
-
 		// Checks if player points are inside asteroid
 		points := raw_data(asteroid.base_points[:])
-		collision := check_point_poly_collision(player_points, points)
+		collision :=
+			check_point_poly_collision(player_points, points) ||
+			check_wrapped_player_asteroid_collision(player_points, asteroid)
 
 		if collision {
 			hit = true
 			break
 		}
-
-		check_wrapped_player_asteroid_collision(player_points, asteroid)
 	}
 
 	return hit
@@ -144,7 +160,6 @@ check_wrapped_player_asteroid_collision :: proc(
 		wrapped_points := asteroid.base_points
 		for &point in wrapped_points {
 			point.x += WINDOW_WIDTH
-
 		}
 
 		wrapped_points_raw := raw_data(wrapped_points[:])
@@ -222,11 +237,23 @@ check_shield_asteroid_collision :: proc(state: ^State, sounds: Sounds) {
 				rl.Vector2Rotate(point * ASTEROID_SIZE_VALUE[asteroid.size], asteroid.angle) +
 				asteroid.pos
 
-			collision := rl.CheckCollisionPointPoly(
-				point,
-				raw_data(points_slice),
-				11,
-			)
+			// Wrap points around the x-axis
+			if point.x < 0 {
+				point.x += WINDOW_WIDTH
+			} else if point.x > WINDOW_WIDTH {
+				point.x -= WINDOW_WIDTH
+			}
+
+			// Wrap points around the y-axis
+			if point.y < 0 {
+				point.y += WINDOW_HEIGHT
+			} else if point.y > WINDOW_HEIGHT {
+				point.y -= WINDOW_HEIGHT
+			}
+
+			collision :=
+				rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) ||
+				check_wrapped_shield_asteroid_collision(state.player, point, points)
 
 			if collision {
 				append(&remove_indices, index)
@@ -245,7 +272,99 @@ check_shield_asteroid_collision :: proc(state: ^State, sounds: Sounds) {
 	}
 }
 
+check_wrapped_shield_asteroid_collision :: proc(
+	player: Player,
+	point: rl.Vector2,
+	points: [10]rl.Vector2,
+) -> bool {
+	// Checks if asteroid is wrapping around x-axis
+	if player.pos.x < PLAYER_SHIELD_RADIUS {
+		points := points
+		for &point in points {
+			point.x += WINDOW_WIDTH
+		}
 
+		points_slice := []rl.Vector2 {
+			points[0],
+			points[1],
+			points[2],
+			points[3],
+			points[4],
+			points[5],
+			points[6],
+			points[7],
+			points[8],
+			points[9],
+			points[0],
+		}
+		return rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11)
+	} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
+		points := points
+		for &point in points {
+			point.x -= WINDOW_WIDTH
+		}
+
+		points_slice := []rl.Vector2 {
+			points[0],
+			points[1],
+			points[2],
+			points[3],
+			points[4],
+			points[5],
+			points[6],
+			points[7],
+			points[8],
+			points[9],
+			points[0],
+		}
+		return rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11)
+	}
+
+	// Checks if asteroid is wrapping around y-axis
+	if player.pos.y < PLAYER_SHIELD_RADIUS {
+		points := points
+		for &point in points {
+			point.y += WINDOW_HEIGHT
+		}
+
+		points_slice := []rl.Vector2 {
+			points[0],
+			points[1],
+			points[2],
+			points[3],
+			points[4],
+			points[5],
+			points[6],
+			points[7],
+			points[8],
+			points[9],
+			points[0],
+		}
+		return rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11)
+	} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
+		points := points
+		for &point in points {
+			point.y -= WINDOW_HEIGHT
+		}
+
+		points_slice := []rl.Vector2 {
+			points[0],
+			points[1],
+			points[2],
+			points[3],
+			points[4],
+			points[5],
+			points[6],
+			points[7],
+			points[8],
+			points[9],
+			points[0],
+		}
+		return rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11)
+	}
+
+	return false
+}
 
 // Creates particles for player destructoin
 make_player_particles :: proc(state: ^State) {
