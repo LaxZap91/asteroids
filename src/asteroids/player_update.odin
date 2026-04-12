@@ -1,5 +1,6 @@
 package asteroids
 
+import "core:slice"
 import rl "vendor:raylib"
 
 // Forces the maximum speed of the player to be PLAYER_SPEED_CAP
