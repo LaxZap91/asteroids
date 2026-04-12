@@ -620,7 +620,6 @@ update_player :: proc(state: ^State, sounds: Sounds) {
 		if rl.IsKeyDown(.UP) do state.player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, state.player.angle)
 		if rl.IsKeyDown(.LEFT) do state.player.angle -= PLAYER_ROTATION_AMOUNT
 		if rl.IsKeyDown(.RIGHT) do state.player.angle += PLAYER_ROTATION_AMOUNT
-		if rl.IsKeyDown(.DOWN) do state.player.vel = {0, 0}
 		if rl.IsKeyPressed(.SPACE) && state.player.shoot_timer == 0 {
 			append(&state.bullets, make_bullet(state.player))
 			state.player.shoot_timer = PLAYER_SHOOT_DELAY
