@@ -663,7 +663,7 @@ update_player :: proc(state: ^State, sounds: Sounds) {
 		if rl.IsKeyDown(.UP) do state.player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, state.player.angle)
 		if rl.IsKeyDown(.LEFT) do state.player.angle -= PLAYER_ROTATION_AMOUNT
 		if rl.IsKeyDown(.RIGHT) do state.player.angle += PLAYER_ROTATION_AMOUNT
-		if rl.IsKeyDown(.DOWN) do state.player.vel = {0,0}
+		if rl.IsKeyDown(.DOWN) do state.player.vel = {0, 0}
 		if rl.IsKeyPressed(.SPACE) && state.player.shoot_timer == 0 {
 			append(&state.bullets, make_bullet(state.player))
 			state.player.shoot_timer = PLAYER_SHOOT_DELAY
@@ -698,19 +698,21 @@ update_player :: proc(state: ^State, sounds: Sounds) {
 
 // Draws the player sprite
 draw_player :: proc(player: Player) {
-	// Player sprite point positions
-	points := generate_player_points(player)
+	if player.state == .Alive {
+		// Player sprite point positions
+		points := generate_player_points(player)
 
-	rl.DrawLineStrip(
-		raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-		5,
-		PLAYER_COLOR,
-	)
+		rl.DrawLineStrip(
+			raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
+			5,
+			PLAYER_COLOR,
+		)
 
-	draw_player_wrapping(player, points)
-	if (player.shield > 0) {
-		draw_shield(player)
-		draw_shield_wrapping(player)
+		draw_player_wrapping(player, points)
+		if (player.shield > 0) {
+			draw_shield(player)
+			draw_shield_wrapping(player)
+		}
 	}
 }
 
