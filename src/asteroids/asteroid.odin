@@ -88,22 +88,22 @@ make_asteroid_rand :: proc() -> Asteroid {
 		x := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_WIDTH - ASTEROID_CORNER_SIZE)
 		y := -ASTEROID_SIZE_VALUE[size]
 		pos = {x, y}
-		angle = rand.float32_range(-135 * rl.DEG2RAD, 135 * rl.DEG2RAD)
+		angle = rand.float32_range(-165 * rl.DEG2RAD, 165 * rl.DEG2RAD)
 	} else if side == .Bottom {
 		x := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_WIDTH - ASTEROID_CORNER_SIZE)
 		y := WINDOW_HEIGHT + ASTEROID_SIZE_VALUE[size]
 		pos = {x, y}
-		angle = rand.float32_range(-45 * rl.DEG2RAD, 45 * rl.DEG2RAD)
+		angle = rand.float32_range(-15 * rl.DEG2RAD, 15 * rl.DEG2RAD)
 	} else if side == .Left {
 		x := -ASTEROID_SIZE_VALUE[size]
 		y := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_HEIGHT - ASTEROID_CORNER_SIZE)
 		pos = {x, y}
-		angle = rand.float32_range(45 * rl.DEG2RAD, 135 * rl.DEG2RAD)
+		angle = rand.float32_range(15 * rl.DEG2RAD, 165 * rl.DEG2RAD)
 	} else if side == .Right {
 		x := WINDOW_HEIGHT + ASTEROID_SIZE_VALUE[size]
 		y := rand.float32_range(ASTEROID_CORNER_SIZE, WINDOW_HEIGHT - ASTEROID_CORNER_SIZE)
 		pos = {x, y}
-		angle = rand.float32_range(-135 * rl.DEG2RAD, -45 * rl.DEG2RAD)
+		angle = rand.float32_range(-165 * rl.DEG2RAD, -15 * rl.DEG2RAD)
 	}
 
 	vel := rl.Vector2Rotate(rl.Vector2{0, -1} * speed, angle)
@@ -175,6 +175,20 @@ draw_asteroids_wrapping :: proc(asteroid: Asteroid) {
 		}
 
 		rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+
+		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			for &point in points {
+				point.y += WINDOW_HEIGHT
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			for &point in points {
+				point.y -= WINDOW_HEIGHT
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+		}
 	} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
 		points := asteroid.base_points
 		for &point in points {
@@ -182,6 +196,20 @@ draw_asteroids_wrapping :: proc(asteroid: Asteroid) {
 		}
 
 		rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+
+		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			for &point in points {
+				point.y += WINDOW_HEIGHT
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			for &point in points {
+				point.y -= WINDOW_HEIGHT
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+		}
 	}
 
 	// Draws asteroid sprite wapping around y-axis
@@ -192,6 +220,20 @@ draw_asteroids_wrapping :: proc(asteroid: Asteroid) {
 		}
 
 		rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+
+		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			for &point in points {
+				point.x += WINDOW_WIDTH
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			for &point in points {
+				point.x -= WINDOW_WIDTH
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+		}
 	} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
 		points := asteroid.base_points
 		for &point in points {
@@ -199,6 +241,20 @@ draw_asteroids_wrapping :: proc(asteroid: Asteroid) {
 		}
 
 		rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+
+		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			for &point in points {
+				point.x += WINDOW_WIDTH
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			for &point in points {
+				point.x -= WINDOW_WIDTH
+			}
+
+			rl.DrawLineStrip(raw_data(points[:]), 11, PLAYER_COLOR)
+		}
 	}
 }
 
@@ -246,13 +302,8 @@ check_asteroid_bullet_collision :: proc(
 	points := raw_data(asteroid.base_points[:])
 
 	for bullet, index in bullets {
-		if check_poly_bullet_collision(points, bullet) {
-			bullet_index = index
-			hit = true
-			break
-		}
-
-		if check_wrapped_asteroid_bullet_collision(asteroid, bullet) {
+		if check_poly_bullet_collision(points, bullet) ||
+		   check_wrapped_asteroid_bullet_collision(asteroid, bullet) {
 			bullet_index = index
 			hit = true
 			break
@@ -281,6 +332,30 @@ check_wrapped_asteroid_bullet_collision :: proc(
 			hit = true
 			return
 		}
+
+		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x, point.y + WINDOW_HEIGHT}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				hit = true
+				return
+			}
+		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x, point.y - WINDOW_HEIGHT}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				hit = true
+				return
+			}
+		}
 	} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
 		wrapped_points := asteroid.base_points
 		for &point in wrapped_points {
@@ -291,6 +366,30 @@ check_wrapped_asteroid_bullet_collision :: proc(
 		if check_poly_bullet_collision(wrapped_points_raw, bullet) {
 			hit = true
 			return
+		}
+
+		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x, point.y + WINDOW_HEIGHT}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				hit = true
+				return
+			}
+		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x, point.y - WINDOW_HEIGHT}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				hit = true
+				return
+			}
 		}
 	}
 
@@ -306,6 +405,28 @@ check_wrapped_asteroid_bullet_collision :: proc(
 			hit = true
 			return
 		}
+
+		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				hit = true
+				return
+			}
+		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x - WINDOW_WIDTH, point.y}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				hit = true
+				return
+			}
+		}
 	} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
 		wrapped_points := asteroid.base_points
 		for &point in wrapped_points {
@@ -316,6 +437,28 @@ check_wrapped_asteroid_bullet_collision :: proc(
 		if check_poly_bullet_collision(wrapped_points_raw, bullet) {
 			hit = true
 			return
+		}
+
+		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				hit = true
+				return
+			}
+		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			for &point in wrapped_points {
+				point = rl.Vector2{point.x - WINDOW_WIDTH, point.y}
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+				hit = true
+				return
+			}
 		}
 	}
 

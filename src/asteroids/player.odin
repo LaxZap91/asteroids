@@ -18,9 +18,9 @@ PLAYER_MAX_LIVES :: 6
 // Number of particles spawned on player death
 PLAYER_PARTICLE_COUNT :: 30
 // How long the player shield lasts
-PLAYER_SHIELD_TIME :: 2 * TARGET_FPS
+PLAYER_SHIELD_TIME :: 5 * TARGET_FPS
 // Radius of the player shield
-PLAYER_SHIELD_RADIUS :: PLAYER_SCALE * 10
+PLAYER_SHIELD_RADIUS :: PLAYER_SCALE * 6
 // Color of the player shield
 PLAYER_SHIELD_COLOR :: rl.WHITE
 // Size multiplication of the player spite
@@ -167,6 +167,31 @@ check_wrapped_player_asteroid_collision :: proc(
 			hit = true
 			return
 		}
+
+
+		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point.y += WINDOW_HEIGHT
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_point_poly_collision(player_points, wrapped_points_raw) {
+				hit = true
+				return
+			}
+		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point.y -= WINDOW_HEIGHT
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_point_poly_collision(player_points, wrapped_points_raw) {
+				hit = true
+				return
+			}
+		}
 	} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
 		wrapped_points := asteroid.base_points
 		for &point in wrapped_points {
@@ -177,6 +202,30 @@ check_wrapped_player_asteroid_collision :: proc(
 		if check_point_poly_collision(player_points, wrapped_points_raw) {
 			hit = true
 			return
+		}
+
+		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point.y += WINDOW_HEIGHT
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_point_poly_collision(player_points, wrapped_points_raw) {
+				hit = true
+				return
+			}
+		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			wrapped_points := asteroid.base_points
+			for &point in wrapped_points {
+				point.y -= WINDOW_HEIGHT
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_point_poly_collision(player_points, wrapped_points_raw) {
+				hit = true
+				return
+			}
 		}
 	}
 
@@ -192,6 +241,28 @@ check_wrapped_player_asteroid_collision :: proc(
 			hit = true
 			return
 		}
+
+		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			for &point in wrapped_points {
+				point.x += WINDOW_WIDTH
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_point_poly_collision(player_points, wrapped_points_raw) {
+				hit = true
+				return
+			}
+		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			for &point in wrapped_points {
+				point.x -= WINDOW_WIDTH
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_point_poly_collision(player_points, wrapped_points_raw) {
+				hit = true
+				return
+			}
+		}
 	} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
 		wrapped_points := asteroid.base_points
 		for &point in wrapped_points {
@@ -202,6 +273,28 @@ check_wrapped_player_asteroid_collision :: proc(
 		if check_point_poly_collision(player_points, wrapped_points_raw) {
 			hit = true
 			return
+		}
+
+		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+			for &point in wrapped_points {
+				point.x += WINDOW_WIDTH
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_point_poly_collision(player_points, wrapped_points_raw) {
+				hit = true
+				return
+			}
+		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+			for &point in wrapped_points {
+				point.x -= WINDOW_WIDTH
+			}
+
+			wrapped_points_raw := raw_data(wrapped_points[:])
+			if check_point_poly_collision(player_points, wrapped_points_raw) {
+				hit = true
+				return
+			}
 		}
 	}
 
@@ -276,7 +369,9 @@ check_wrapped_shield_asteroid_collision :: proc(
 	player: Player,
 	point: rl.Vector2,
 	points: [10]rl.Vector2,
-) -> bool {
+) -> (
+	hit: bool,
+) {
 	// Checks if asteroid is wrapping around x-axis
 	if player.pos.x < PLAYER_SHIELD_RADIUS {
 		points := points
@@ -297,7 +392,55 @@ check_wrapped_shield_asteroid_collision :: proc(
 			points[9],
 			points[0],
 		}
-		return rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11)
+		if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+			hit = true
+		}
+
+		if player.pos.y < PLAYER_SHIELD_RADIUS {
+			points := points
+			for &point in points {
+				point.y += WINDOW_HEIGHT
+			}
+
+			points_slice := []rl.Vector2 {
+				points[0],
+				points[1],
+				points[2],
+				points[3],
+				points[4],
+				points[5],
+				points[6],
+				points[7],
+				points[8],
+				points[9],
+				points[0],
+			}
+			if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+				hit = true
+			}
+		} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
+			points := points
+			for &point in points {
+				point.y -= WINDOW_HEIGHT
+			}
+
+			points_slice := []rl.Vector2 {
+				points[0],
+				points[1],
+				points[2],
+				points[3],
+				points[4],
+				points[5],
+				points[6],
+				points[7],
+				points[8],
+				points[9],
+				points[0],
+			}
+			if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+				hit = true
+			}
+		}
 	} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
 		points := points
 		for &point in points {
@@ -317,7 +460,55 @@ check_wrapped_shield_asteroid_collision :: proc(
 			points[9],
 			points[0],
 		}
-		return rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11)
+		if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+			hit = true
+		}
+
+		if player.pos.y < PLAYER_SHIELD_RADIUS {
+			points := points
+			for &point in points {
+				point.y += WINDOW_HEIGHT
+			}
+
+			points_slice := []rl.Vector2 {
+				points[0],
+				points[1],
+				points[2],
+				points[3],
+				points[4],
+				points[5],
+				points[6],
+				points[7],
+				points[8],
+				points[9],
+				points[0],
+			}
+			if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+				hit = true
+			}
+		} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
+			points := points
+			for &point in points {
+				point.y -= WINDOW_HEIGHT
+			}
+
+			points_slice := []rl.Vector2 {
+				points[0],
+				points[1],
+				points[2],
+				points[3],
+				points[4],
+				points[5],
+				points[6],
+				points[7],
+				points[8],
+				points[9],
+				points[0],
+			}
+			if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+				hit = true
+			}
+		}
 	}
 
 	// Checks if asteroid is wrapping around y-axis
@@ -340,7 +531,53 @@ check_wrapped_shield_asteroid_collision :: proc(
 			points[9],
 			points[0],
 		}
-		return rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11)
+		if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+			hit = true
+		}
+
+		if player.pos.x < PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.x += WINDOW_WIDTH
+			}
+
+			points_slice := []rl.Vector2 {
+				points[0],
+				points[1],
+				points[2],
+				points[3],
+				points[4],
+				points[5],
+				points[6],
+				points[7],
+				points[8],
+				points[9],
+				points[0],
+			}
+			if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+				hit = true
+			}
+		} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.x -= WINDOW_WIDTH
+			}
+
+			points_slice := []rl.Vector2 {
+				points[0],
+				points[1],
+				points[2],
+				points[3],
+				points[4],
+				points[5],
+				points[6],
+				points[7],
+				points[8],
+				points[9],
+				points[0],
+			}
+			if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+				hit = true
+			}
+		}
 	} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
 		points := points
 		for &point in points {
@@ -360,10 +597,56 @@ check_wrapped_shield_asteroid_collision :: proc(
 			points[9],
 			points[0],
 		}
-		return rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11)
+		if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+			hit = true
+		}
+
+		if player.pos.x < PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.x += WINDOW_WIDTH
+			}
+
+			points_slice := []rl.Vector2 {
+				points[0],
+				points[1],
+				points[2],
+				points[3],
+				points[4],
+				points[5],
+				points[6],
+				points[7],
+				points[8],
+				points[9],
+				points[0],
+			}
+			if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+				hit = true
+			}
+		} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.x -= WINDOW_WIDTH
+			}
+
+			points_slice := []rl.Vector2 {
+				points[0],
+				points[1],
+				points[2],
+				points[3],
+				points[4],
+				points[5],
+				points[6],
+				points[7],
+				points[8],
+				points[9],
+				points[0],
+			}
+			if rl.CheckCollisionPointPoly(point, raw_data(points_slice), 11) {
+				hit = true
+			}
+		}
 	}
 
-	return false
+	return hit
 }
 
 // Creates particles for player destructoin
@@ -380,6 +663,7 @@ update_player :: proc(state: ^State, sounds: Sounds) {
 		if rl.IsKeyDown(.UP) do state.player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, state.player.angle)
 		if rl.IsKeyDown(.LEFT) do state.player.angle -= PLAYER_ROTATION_AMOUNT
 		if rl.IsKeyDown(.RIGHT) do state.player.angle += PLAYER_ROTATION_AMOUNT
+		if rl.IsKeyDown(.DOWN) do state.player.vel = {0,0}
 		if rl.IsKeyPressed(.SPACE) && state.player.shoot_timer == 0 {
 			append(&state.bullets, make_bullet(state.player))
 			state.player.shoot_timer = PLAYER_SHOOT_DELAY
@@ -488,6 +772,56 @@ draw_shield_wrapping :: proc(player: Player) {
 			11,
 			PLAYER_SHIELD_COLOR,
 		)
+
+		if player.pos.y < PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.y += WINDOW_HEIGHT
+			}
+
+			rl.DrawLineStrip(
+				raw_data(
+					[]rl.Vector2 {
+						points[0],
+						points[1],
+						points[2],
+						points[3],
+						points[4],
+						points[5],
+						points[6],
+						points[7],
+						points[8],
+						points[9],
+						points[0],
+					},
+				),
+				11,
+				PLAYER_SHIELD_COLOR,
+			)
+		} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.y -= WINDOW_HEIGHT
+			}
+
+			rl.DrawLineStrip(
+				raw_data(
+					[]rl.Vector2 {
+						points[0],
+						points[1],
+						points[2],
+						points[3],
+						points[4],
+						points[5],
+						points[6],
+						points[7],
+						points[8],
+						points[9],
+						points[0],
+					},
+				),
+				11,
+				PLAYER_SHIELD_COLOR,
+			)
+		}
 	} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
 		points := base_decagon
 		for &point in points {
@@ -515,6 +849,56 @@ draw_shield_wrapping :: proc(player: Player) {
 			11,
 			PLAYER_SHIELD_COLOR,
 		)
+
+		if player.pos.y < PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.y += WINDOW_HEIGHT
+			}
+
+			rl.DrawLineStrip(
+				raw_data(
+					[]rl.Vector2 {
+						points[0],
+						points[1],
+						points[2],
+						points[3],
+						points[4],
+						points[5],
+						points[6],
+						points[7],
+						points[8],
+						points[9],
+						points[0],
+					},
+				),
+				11,
+				PLAYER_SHIELD_COLOR,
+			)
+		} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.y -= WINDOW_HEIGHT
+			}
+
+			rl.DrawLineStrip(
+				raw_data(
+					[]rl.Vector2 {
+						points[0],
+						points[1],
+						points[2],
+						points[3],
+						points[4],
+						points[5],
+						points[6],
+						points[7],
+						points[8],
+						points[9],
+						points[0],
+					},
+				),
+				11,
+				PLAYER_SHIELD_COLOR,
+			)
+		}
 	}
 
 	// Draws player sprite wapping around y-axis
@@ -545,6 +929,56 @@ draw_shield_wrapping :: proc(player: Player) {
 			11,
 			PLAYER_SHIELD_COLOR,
 		)
+
+		if player.pos.x < PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.x += WINDOW_WIDTH
+			}
+
+			rl.DrawLineStrip(
+				raw_data(
+					[]rl.Vector2 {
+						points[0],
+						points[1],
+						points[2],
+						points[3],
+						points[4],
+						points[5],
+						points[6],
+						points[7],
+						points[8],
+						points[9],
+						points[0],
+					},
+				),
+				11,
+				PLAYER_SHIELD_COLOR,
+			)
+		} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.x -= WINDOW_WIDTH
+			}
+
+			rl.DrawLineStrip(
+				raw_data(
+					[]rl.Vector2 {
+						points[0],
+						points[1],
+						points[2],
+						points[3],
+						points[4],
+						points[5],
+						points[6],
+						points[7],
+						points[8],
+						points[9],
+						points[0],
+					},
+				),
+				11,
+				PLAYER_SHIELD_COLOR,
+			)
+		}
 	} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
 		points := base_decagon
 		for &point in points {
@@ -572,6 +1006,56 @@ draw_shield_wrapping :: proc(player: Player) {
 			11,
 			PLAYER_SHIELD_COLOR,
 		)
+
+		if player.pos.x < PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.x += WINDOW_WIDTH
+			}
+
+			rl.DrawLineStrip(
+				raw_data(
+					[]rl.Vector2 {
+						points[0],
+						points[1],
+						points[2],
+						points[3],
+						points[4],
+						points[5],
+						points[6],
+						points[7],
+						points[8],
+						points[9],
+						points[0],
+					},
+				),
+				11,
+				PLAYER_SHIELD_COLOR,
+			)
+		} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
+			for &point in points {
+				point.x -= WINDOW_WIDTH
+			}
+
+			rl.DrawLineStrip(
+				raw_data(
+					[]rl.Vector2 {
+						points[0],
+						points[1],
+						points[2],
+						points[3],
+						points[4],
+						points[5],
+						points[6],
+						points[7],
+						points[8],
+						points[9],
+						points[0],
+					},
+				),
+				11,
+				PLAYER_SHIELD_COLOR,
+			)
+		}
 	}
 }
 
@@ -590,6 +1074,30 @@ draw_player_wrapping :: proc(player: Player, points: [4]rl.Vector2) {
 			5,
 			PLAYER_COLOR,
 		)
+
+		if player.pos.y < PLAYER_SCALE * 2 {
+			points[0].y += WINDOW_HEIGHT
+			points[1].y += WINDOW_HEIGHT
+			points[2].y += WINDOW_HEIGHT
+			points[3].y += WINDOW_HEIGHT
+
+			rl.DrawLineStrip(
+				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
+				5,
+				PLAYER_COLOR,
+			)
+		} else if player.pos.y > WINDOW_HEIGHT - (PLAYER_SCALE * 2) {
+			points[0].y -= WINDOW_HEIGHT
+			points[1].y -= WINDOW_HEIGHT
+			points[2].y -= WINDOW_HEIGHT
+			points[3].y -= WINDOW_HEIGHT
+
+			rl.DrawLineStrip(
+				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
+				5,
+				PLAYER_COLOR,
+			)
+		}
 	} else if player.pos.x > WINDOW_WIDTH - (PLAYER_SCALE * 2) {
 		points := points
 		points[0].x -= WINDOW_WIDTH
@@ -602,6 +1110,30 @@ draw_player_wrapping :: proc(player: Player, points: [4]rl.Vector2) {
 			5,
 			PLAYER_COLOR,
 		)
+
+		if player.pos.y < PLAYER_SCALE * 2 {
+			points[0].y += WINDOW_HEIGHT
+			points[1].y += WINDOW_HEIGHT
+			points[2].y += WINDOW_HEIGHT
+			points[3].y += WINDOW_HEIGHT
+
+			rl.DrawLineStrip(
+				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
+				5,
+				PLAYER_COLOR,
+			)
+		} else if player.pos.y > WINDOW_HEIGHT - (PLAYER_SCALE * 2) {
+			points[0].y -= WINDOW_HEIGHT
+			points[1].y -= WINDOW_HEIGHT
+			points[2].y -= WINDOW_HEIGHT
+			points[3].y -= WINDOW_HEIGHT
+
+			rl.DrawLineStrip(
+				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
+				5,
+				PLAYER_COLOR,
+			)
+		}
 	}
 
 	// Draws player sprite wapping around y-axis
@@ -617,6 +1149,30 @@ draw_player_wrapping :: proc(player: Player, points: [4]rl.Vector2) {
 			5,
 			PLAYER_COLOR,
 		)
+
+		if player.pos.x < PLAYER_SCALE * 2 {
+			points[0].x += WINDOW_WIDTH
+			points[1].x += WINDOW_WIDTH
+			points[2].x += WINDOW_WIDTH
+			points[3].x += WINDOW_WIDTH
+
+			rl.DrawLineStrip(
+				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
+				5,
+				PLAYER_COLOR,
+			)
+		} else if player.pos.x > WINDOW_WIDTH - (PLAYER_SCALE * 2) {
+			points[0].x -= WINDOW_WIDTH
+			points[1].x -= WINDOW_WIDTH
+			points[2].x -= WINDOW_WIDTH
+			points[3].x -= WINDOW_WIDTH
+
+			rl.DrawLineStrip(
+				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
+				5,
+				PLAYER_COLOR,
+			)
+		}
 	} else if player.pos.y > WINDOW_HEIGHT - (PLAYER_SCALE * 2) {
 		points := points
 		points[0].y -= WINDOW_HEIGHT
@@ -629,6 +1185,30 @@ draw_player_wrapping :: proc(player: Player, points: [4]rl.Vector2) {
 			5,
 			PLAYER_COLOR,
 		)
+
+		if player.pos.x < PLAYER_SCALE * 2 {
+			points[0].x += WINDOW_WIDTH
+			points[1].x += WINDOW_WIDTH
+			points[2].x += WINDOW_WIDTH
+			points[3].x += WINDOW_WIDTH
+
+			rl.DrawLineStrip(
+				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
+				5,
+				PLAYER_COLOR,
+			)
+		} else if player.pos.x > WINDOW_WIDTH - (PLAYER_SCALE * 2) {
+			points[0].x -= WINDOW_WIDTH
+			points[1].x -= WINDOW_WIDTH
+			points[2].x -= WINDOW_WIDTH
+			points[3].x -= WINDOW_WIDTH
+
+			rl.DrawLineStrip(
+				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
+				5,
+				PLAYER_COLOR,
+			)
+		}
 	}
 }
 
