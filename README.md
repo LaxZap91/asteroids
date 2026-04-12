@@ -9,5 +9,3 @@ The classic asteroids game, written in the odin programming language
 3. `odin run src`
 
 ## TODO
-
-- Add rendering and collision checking for opposite corner
