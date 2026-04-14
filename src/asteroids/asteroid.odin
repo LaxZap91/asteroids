@@ -4,17 +4,17 @@ import "core:math"
 import "core:math/rand"
 import rl "vendor:raylib"
 
-// Minimum delay between asteroids
-ASTEROID_MIN_DELAY :: 90
-// Maximum delay between asteroids
-ASTEROID_MAX_DELAY :: 150
-// Number of asteroids on screen that stops spawning
+// Minimum delay between asteroids spawning
+ASTEROID_MIN_DELAY :: 1.5 * TARGET_FPS
+// Maximum delay between asteroids spawning
+ASTEROID_MAX_DELAY :: 2.5 * TARGET_FPS
+// Maximum number of asteroids on screen before asteroids stop spawning
 ASTEROID_SOFT_MAX :: 15
 // Increment that ASTEROID_SOFT_MAX increases by for every level of difficulty
 ASTEROID_MAX_INCREMENT :: 5
-// Maximum number of asteroids on screen
+// Maximum number of asteroids able to be spawned
 ASTEROID_MAX :: (ASTEROID_SOFT_MAX + (ASTEROID_MAX_INCREMENT * 2)) * 4
-// Border between corner that asteroids spawn in
+// Pixel gap from corners that stop asteroid spawning
 ASTEROID_CORNER_SIZE :: 75
 // Minimum speed that an asteroid can move at
 ASTEROID_MIN_SPEED :: 400
@@ -31,13 +31,13 @@ ASTEROID_SIZE :: enum {
 	Medium,
 	Small,
 }
-// Asteroid scale sizes
+// Asteroid scale factor based on size
 ASTEROID_SIZE_VALUE := [ASTEROID_SIZE]f32 {
 	.Large  = 60,
 	.Medium = 45,
 	.Small  = 30,
 }
-// Asteroid point values
+// Asteroid point values based on size
 ASTEROID_POINT_VALUE := [ASTEROID_SIZE]f32 {
 	.Large  = 30,
 	.Medium = 45,
@@ -49,11 +49,11 @@ ASTEROID_POINT_EDGE_MOVE_MAX :: 0.45
 // Minimum distance points will move if they are
 // chosen to change
 ASTEROID_POINT_EDGE_MOVE_MIN :: 0.2
-// Minimum offset of asteroid choise position
+// Minimum offset of asteroid points chosen to shift
 ASTEROID_OFFSET_MIN :: 2
-// Central offset of asteroid choise position
+// Central offset of asteroid points chosen to shift
 ASTEROID_OFFSET_CENTER :: 4
-// Maximum offset of asteroid choise position
+// Maximum offset of asteroid points chosen to shift
 ASTEROID_OFFSET_MAX :: 8
 // Color of asteroid sprite
 ASTEROID_COLOR :: rl.WHITE
@@ -135,10 +135,14 @@ make_asteroid_child :: proc(asteroid: Asteroid) -> Asteroid {
 	speed := rand.float32_range(ASTEROID_MIN_SPEED / 2, ASTEROID_MAX_SPEED / 2)
 	vel := rl.Vector2Rotate(rl.Vector2{0, -1} * speed, angle)
 
+	// Reduces the size of the asteroid
 	size: ASTEROID_SIZE
-	if asteroid.size == .Large do size = .Medium
-	else if asteroid.size == .Medium do size = .Small
-	else if asteroid.size == .Small do size = .Small
+	switch asteroid.size {
+	case .Large:
+		size = .Medium
+	case .Medium, .Small:
+		size = .Small
+	}
 
 	rotation_speed :=
 		rand.float32_range(-ASTEROID_ROTATION_SPEED, ASTEROID_ROTATION_SPEED) * rl.DEG2RAD
@@ -167,22 +171,10 @@ make_base_decagon :: proc "contextless" () -> (points: [10]rl.Vector2) {
 	return points
 }
 
-// Makes points for an asteroid
+// Makes rendering points for an asteroid
 make_points :: proc() -> [11]rl.Vector2 {
-	// Initial positions
-	points := [11]rl.Vector2 {
-		base_decagon[0],
-		base_decagon[1],
-		base_decagon[2],
-		base_decagon[3],
-		base_decagon[4],
-		base_decagon[5],
-		base_decagon[6],
-		base_decagon[7],
-		base_decagon[8],
-		base_decagon[9],
-		base_decagon[0],
-	}
+	points := base_decagon
+
 	change_point_one := rand.uint32_range(0, 10)
 	change_point_one_move := rand.float32_range(
 		ASTEROID_POINT_EDGE_MOVE_MIN,
@@ -203,26 +195,28 @@ make_points :: proc() -> [11]rl.Vector2 {
 		ASTEROID_POINT_EDGE_MOVE_MAX,
 	)
 
-	if change_point_one == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_one_move)
 	points[change_point_one] = rl.Vector2MoveTowards(
 		points[change_point_one],
 		{0, 0},
 		change_point_one_move,
 	)
 
-	if change_point_two == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_two_move)
 	points[change_point_two] = rl.Vector2MoveTowards(
 		points[change_point_two],
 		{0, 0},
 		change_point_two_move,
 	)
 
-	if change_point_three == 0 do points[10] = rl.Vector2MoveTowards(points[10], {0, 0}, change_point_three_move)
 	points[change_point_three] = rl.Vector2MoveTowards(
 		points[change_point_three],
 		{0, 0},
 		change_point_three_move,
 	)
 
-	return points
+	points_wrapped: [11]rl.Vector2
+	for &point, index in points_wrapped {
+		point = points[index % 10]
+	}
+
+	return points_wrapped
 }

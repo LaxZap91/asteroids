@@ -11,14 +11,14 @@ FILE_EXT :: []string{".png", ".jpg", ".jpeg", ".wav"}
 
 DATA_WIDTH :: 15
 
-file_as_code := proc(image_path: string, image_data: []byte) -> string {
+file_as_code_now := proc(image_path: string, image_data: []byte) -> string {
 	image_ext := fp.ext(image_path)
 	image_base_name := fp.base(image_path)
 	image_name, _ := s.substring_to(image_base_name, s.index(image_base_name, image_ext))
 	image_name_upper := s.to_upper(image_name)
 	image_size := len(image_data)
 
-	builder := s.builder_make()
+	builder := s.builder_make(context.temp_allocator)
 
 	fmt.sbprintfln(&builder, "package assets\n")
 	fmt.sbprintfln(&builder, "%v_PATH :: `%v`", image_name_upper, image_path)
@@ -49,25 +49,43 @@ file_as_code := proc(image_path: string, image_data: []byte) -> string {
 	return s.to_string(builder)
 }
 
-wave_as_code :: proc(sound_path: string, sound_data: []byte) -> string {
+file_as_code_compile_time := proc(image_path: string, image_data: []byte) -> string {
+	image_ext := fp.ext(image_path)
+	image_base_name := fp.base(image_path)
+	image_name, _ := s.substring_to(image_base_name, s.index(image_base_name, image_ext))
+	image_name_upper := s.to_upper(image_name)
+	image_size := len(image_data)
 
+	builder := s.builder_make(context.temp_allocator)
 
-	return ""
+	fmt.sbprintfln(&builder, "package assets\n")
+	fmt.sbprintfln(&builder, "%v_PATH :: `%v`", image_name_upper, image_path)
+	fmt.sbprintfln(&builder, "%v_EXT :: \"%v\"\n", image_name_upper, image_ext)
+	fmt.sbprintfln(&builder, "@(rodata)")
+	fmt.sbprintfln(&builder, "%v_DATA := #load(`..\\..\\` + %v_PATH)", image_name_upper, image_name_upper)
+	fmt.sbprintfln(&builder, "%v_PTR := raw_data(%v_DATA)", image_name_upper, image_name_upper)
+	fmt.sbprintfln(&builder, "%v_SIZE := i32(len(%v_DATA))", image_name_upper, image_name_upper)
+
+	return s.to_string(builder)
 }
 
-export_file_as_code :: proc(input_path, output_path: string) {
-	input_data, input_err := os.read_entire_file_from_path(input_path, context.allocator)
+export_file_as_code :: proc(input_path, output_path: string, now: bool) {
+	input_data, input_err := os.read_entire_file_from_path(input_path, context.temp_allocator)
 	if input_err != os.ERROR_NONE {
 		msg := os.error_string(input_err)
 		fmt.eprintfln("Could not read file %s: %s", input_path, msg)
 		return
 	}
 
-	input_path, _ := os.clean_path(input_path, context.allocator)
+	input_path, _ := os.clean_path(input_path, context.temp_allocator)
 
 	code: string
 	if input_ext := fp.ext(input_path); slice.contains(FILE_EXT, input_ext) {
-		code = file_as_code(input_path, input_data)
+		if now {
+			code = file_as_code_now(input_path, input_data)
+		} else {
+			code = file_as_code_compile_time(input_path, input_data)
+		}
 	} else {
 		fmt.eprintfln("Extention is unknown: %s", input_ext)
 	}
@@ -89,7 +107,7 @@ export_file_as_code :: proc(input_path, output_path: string) {
 	}
 }
 
-export_dir_as_code :: proc(input_dir, output_dir: string) {
+export_dir_as_code :: proc(input_dir, output_dir: string, now: bool) {
 	walker := os.walker_create(input_dir)
 	defer os.walker_destroy(&walker)
 
@@ -111,10 +129,12 @@ export_dir_as_code :: proc(input_dir, output_dir: string) {
 		output_file, _ := os.join_filename(
 			s.concatenate({input_file_name, "_asset"}),
 			"odin",
-			context.allocator,
+			context.temp_allocator,
 		)
-		output_path, _ := os.join_path({output_dir, output_file}, context.allocator)
-		export_file_as_code(info.fullpath, output_path)
+		output_path, _ := os.join_path({output_dir, output_file}, context.temp_allocator)
+		export_file_as_code(info.fullpath, output_path, now)
+
+		free_all(context.temp_allocator)
 	}
 
 
@@ -145,8 +165,9 @@ flag_checker :: proc(
 
 main :: proc() {
 	Options :: struct {
-		input:  string `args:"pos=0,required" usage:"Input directory."`,
-		output: string `args:"pos=1,required" usage:"Output directory."`,
+		input:  string `args:"pos=0,required" usage:"Input directory"`,
+		output: string `args:"pos=1,required" usage:"Output directory"`,
+		now: bool `usage:"Load files now instead of at compile time"`,
 	}
 
 	opt: Options
@@ -155,5 +176,5 @@ main :: proc() {
 	flags.Custom_Flag_Checker(flag_checker)
 	flags.parse_or_exit(&opt, os.args, style)
 
-	export_dir_as_code(opt.input, opt.output)
+	export_dir_as_code(opt.input, opt.output, opt.now)
 }

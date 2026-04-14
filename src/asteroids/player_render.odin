@@ -2,521 +2,122 @@ package asteroids
 
 import rl "vendor:raylib"
 
+// Gets the player rendering points in rendering order
+get_player_points :: proc(points: [4]rl.Vector2) -> []rl.Vector2 {
+	points_slice := make([]rl.Vector2, 5, context.temp_allocator)
+	points_wrapped: [5]rl.Vector2
+
+	points_wrapped = swizzle(points, 0, 1, 3, 2, 0)
+	points_slice = points_wrapped[:]
+
+	return points_slice
+}
+
 // Draws the player sprite
 draw_player :: proc(player: Player) {
 	if player.state == .Alive {
 		// Player sprite point positions
 		points := generate_player_points(player)
 
-		rl.DrawLineStrip(
-			raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-			5,
-			PLAYER_COLOR,
-		)
+		points_slice := get_player_points(points)
+		rl.DrawLineStrip(raw_data(points_slice), 5, PLAYER_COLOR)
 
-		draw_player_wrapping(player, points)
+		draw_player_wrapping(player)
+
 		if (player.shield > 0) {
 			draw_shield(player)
-			draw_shield_wrapping(player)
-		}
-	}
-}
-
-// Draws the player shield
-draw_shield :: proc(player: Player) {
-	points := base_decagon
-	for &point in points {
-		point = rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, player.angle) + player.pos
-	}
-
-	rl.DrawLineStrip(
-		raw_data(
-			[]rl.Vector2 {
-				points[0],
-				points[1],
-				points[2],
-				points[3],
-				points[4],
-				points[5],
-				points[6],
-				points[7],
-				points[8],
-				points[9],
-				points[0],
-			},
-		),
-		11,
-		PLAYER_SHIELD_COLOR,
-	)
-}
-
-// Draws the player shield if the player is wrapping around screen
-draw_shield_wrapping :: proc(player: Player) {
-	// Draws player sprite wapping around x-axis
-	if player.pos.x < PLAYER_SHIELD_RADIUS {
-		points := base_decagon
-		for &point in points {
-			point =
-				rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, player.angle) +
-				{player.pos.x + WINDOW_WIDTH, player.pos.y}
-		}
-
-		rl.DrawLineStrip(
-			raw_data(
-				[]rl.Vector2 {
-					points[0],
-					points[1],
-					points[2],
-					points[3],
-					points[4],
-					points[5],
-					points[6],
-					points[7],
-					points[8],
-					points[9],
-					points[0],
-				},
-			),
-			11,
-			PLAYER_SHIELD_COLOR,
-		)
-
-		if player.pos.y < PLAYER_SHIELD_RADIUS {
-			for &point in points {
-				point.y += WINDOW_HEIGHT
-			}
-
-			rl.DrawLineStrip(
-				raw_data(
-					[]rl.Vector2 {
-						points[0],
-						points[1],
-						points[2],
-						points[3],
-						points[4],
-						points[5],
-						points[6],
-						points[7],
-						points[8],
-						points[9],
-						points[0],
-					},
-				),
-				11,
-				PLAYER_SHIELD_COLOR,
-			)
-		} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
-			for &point in points {
-				point.y -= WINDOW_HEIGHT
-			}
-
-			rl.DrawLineStrip(
-				raw_data(
-					[]rl.Vector2 {
-						points[0],
-						points[1],
-						points[2],
-						points[3],
-						points[4],
-						points[5],
-						points[6],
-						points[7],
-						points[8],
-						points[9],
-						points[0],
-					},
-				),
-				11,
-				PLAYER_SHIELD_COLOR,
-			)
-		}
-	} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
-		points := base_decagon
-		for &point in points {
-			point =
-				rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, player.angle) +
-				{player.pos.x - WINDOW_WIDTH, player.pos.y}
-		}
-
-		rl.DrawLineStrip(
-			raw_data(
-				[]rl.Vector2 {
-					points[0],
-					points[1],
-					points[2],
-					points[3],
-					points[4],
-					points[5],
-					points[6],
-					points[7],
-					points[8],
-					points[9],
-					points[0],
-				},
-			),
-			11,
-			PLAYER_SHIELD_COLOR,
-		)
-
-		if player.pos.y < PLAYER_SHIELD_RADIUS {
-			for &point in points {
-				point.y += WINDOW_HEIGHT
-			}
-
-			rl.DrawLineStrip(
-				raw_data(
-					[]rl.Vector2 {
-						points[0],
-						points[1],
-						points[2],
-						points[3],
-						points[4],
-						points[5],
-						points[6],
-						points[7],
-						points[8],
-						points[9],
-						points[0],
-					},
-				),
-				11,
-				PLAYER_SHIELD_COLOR,
-			)
-		} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
-			for &point in points {
-				point.y -= WINDOW_HEIGHT
-			}
-
-			rl.DrawLineStrip(
-				raw_data(
-					[]rl.Vector2 {
-						points[0],
-						points[1],
-						points[2],
-						points[3],
-						points[4],
-						points[5],
-						points[6],
-						points[7],
-						points[8],
-						points[9],
-						points[0],
-					},
-				),
-				11,
-				PLAYER_SHIELD_COLOR,
-			)
-		}
-	}
-
-	// Draws player sprite wapping around y-axis
-	if player.pos.y < PLAYER_SHIELD_RADIUS {
-		points := base_decagon
-		for &point in points {
-			point =
-				rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, player.angle) +
-				{player.pos.x, player.pos.y + WINDOW_HEIGHT}
-		}
-
-		rl.DrawLineStrip(
-			raw_data(
-				[]rl.Vector2 {
-					points[0],
-					points[1],
-					points[2],
-					points[3],
-					points[4],
-					points[5],
-					points[6],
-					points[7],
-					points[8],
-					points[9],
-					points[0],
-				},
-			),
-			11,
-			PLAYER_SHIELD_COLOR,
-		)
-
-		if player.pos.x < PLAYER_SHIELD_RADIUS {
-			for &point in points {
-				point.x += WINDOW_WIDTH
-			}
-
-			rl.DrawLineStrip(
-				raw_data(
-					[]rl.Vector2 {
-						points[0],
-						points[1],
-						points[2],
-						points[3],
-						points[4],
-						points[5],
-						points[6],
-						points[7],
-						points[8],
-						points[9],
-						points[0],
-					},
-				),
-				11,
-				PLAYER_SHIELD_COLOR,
-			)
-		} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
-			for &point in points {
-				point.x -= WINDOW_WIDTH
-			}
-
-			rl.DrawLineStrip(
-				raw_data(
-					[]rl.Vector2 {
-						points[0],
-						points[1],
-						points[2],
-						points[3],
-						points[4],
-						points[5],
-						points[6],
-						points[7],
-						points[8],
-						points[9],
-						points[0],
-					},
-				),
-				11,
-				PLAYER_SHIELD_COLOR,
-			)
-		}
-	} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
-		points := base_decagon
-		for &point in points {
-			point =
-				rl.Vector2Rotate(point * PLAYER_SHIELD_RADIUS, player.angle) +
-				{player.pos.x, player.pos.y - WINDOW_HEIGHT}
-		}
-
-		rl.DrawLineStrip(
-			raw_data(
-				[]rl.Vector2 {
-					points[0],
-					points[1],
-					points[2],
-					points[3],
-					points[4],
-					points[5],
-					points[6],
-					points[7],
-					points[8],
-					points[9],
-					points[0],
-				},
-			),
-			11,
-			PLAYER_SHIELD_COLOR,
-		)
-
-		if player.pos.x < PLAYER_SHIELD_RADIUS {
-			for &point in points {
-				point.x += WINDOW_WIDTH
-			}
-
-			rl.DrawLineStrip(
-				raw_data(
-					[]rl.Vector2 {
-						points[0],
-						points[1],
-						points[2],
-						points[3],
-						points[4],
-						points[5],
-						points[6],
-						points[7],
-						points[8],
-						points[9],
-						points[0],
-					},
-				),
-				11,
-				PLAYER_SHIELD_COLOR,
-			)
-		} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
-			for &point in points {
-				point.x -= WINDOW_WIDTH
-			}
-
-			rl.DrawLineStrip(
-				raw_data(
-					[]rl.Vector2 {
-						points[0],
-						points[1],
-						points[2],
-						points[3],
-						points[4],
-						points[5],
-						points[6],
-						points[7],
-						points[8],
-						points[9],
-						points[0],
-					},
-				),
-				11,
-				PLAYER_SHIELD_COLOR,
-			)
 		}
 	}
 }
 
 // Draws the player sprite wrapping around screen edges
-draw_player_wrapping :: proc(player: Player, points: [4]rl.Vector2) {
+draw_player_wrapping :: proc(player: Player) {
 	// Draws player sprite wapping around x-axis
 	if player.pos.x < PLAYER_SCALE * 2 {
-		points := points
-		points[0].x += WINDOW_WIDTH
-		points[1].x += WINDOW_WIDTH
-		points[2].x += WINDOW_WIDTH
-		points[3].x += WINDOW_WIDTH
-
-		rl.DrawLineStrip(
-			raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-			5,
-			PLAYER_COLOR,
-		)
-
-		if player.pos.y < PLAYER_SCALE * 2 {
-			points[0].y += WINDOW_HEIGHT
-			points[1].y += WINDOW_HEIGHT
-			points[2].y += WINDOW_HEIGHT
-			points[3].y += WINDOW_HEIGHT
-
-			rl.DrawLineStrip(
-				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-				5,
-				PLAYER_COLOR,
-			)
-		} else if player.pos.y > WINDOW_HEIGHT - (PLAYER_SCALE * 2) {
-			points[0].y -= WINDOW_HEIGHT
-			points[1].y -= WINDOW_HEIGHT
-			points[2].y -= WINDOW_HEIGHT
-			points[3].y -= WINDOW_HEIGHT
-
-			rl.DrawLineStrip(
-				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-				5,
-				PLAYER_COLOR,
-			)
+		points := generate_player_points(player)
+		for &point in points {
+			point.x += WINDOW_WIDTH
 		}
+
+		points_slice := get_player_points(points)
+		rl.DrawLineStrip(raw_data(points_slice), 5, PLAYER_COLOR)
+
+		draw_player_wrapping_y(player, points)
 	} else if player.pos.x > WINDOW_WIDTH - (PLAYER_SCALE * 2) {
-		points := points
-		points[0].x -= WINDOW_WIDTH
-		points[1].x -= WINDOW_WIDTH
-		points[2].x -= WINDOW_WIDTH
-		points[3].x -= WINDOW_WIDTH
-
-		rl.DrawLineStrip(
-			raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-			5,
-			PLAYER_COLOR,
-		)
-
-		if player.pos.y < PLAYER_SCALE * 2 {
-			points[0].y += WINDOW_HEIGHT
-			points[1].y += WINDOW_HEIGHT
-			points[2].y += WINDOW_HEIGHT
-			points[3].y += WINDOW_HEIGHT
-
-			rl.DrawLineStrip(
-				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-				5,
-				PLAYER_COLOR,
-			)
-		} else if player.pos.y > WINDOW_HEIGHT - (PLAYER_SCALE * 2) {
-			points[0].y -= WINDOW_HEIGHT
-			points[1].y -= WINDOW_HEIGHT
-			points[2].y -= WINDOW_HEIGHT
-			points[3].y -= WINDOW_HEIGHT
-
-			rl.DrawLineStrip(
-				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-				5,
-				PLAYER_COLOR,
-			)
+		points := generate_player_points(player)
+		for &point in points {
+			point.x -= WINDOW_WIDTH
 		}
+
+		points_slice := get_player_points(points)
+		rl.DrawLineStrip(raw_data(points_slice), 5, PLAYER_COLOR)
+
+		draw_player_wrapping_y(player, points)
 	}
 
 	// Draws player sprite wapping around y-axis
 	if player.pos.y < PLAYER_SCALE * 2 {
-		points := points
-		points[0].y += WINDOW_HEIGHT
-		points[1].y += WINDOW_HEIGHT
-		points[2].y += WINDOW_HEIGHT
-		points[3].y += WINDOW_HEIGHT
-
-		rl.DrawLineStrip(
-			raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-			5,
-			PLAYER_COLOR,
-		)
-
-		if player.pos.x < PLAYER_SCALE * 2 {
-			points[0].x += WINDOW_WIDTH
-			points[1].x += WINDOW_WIDTH
-			points[2].x += WINDOW_WIDTH
-			points[3].x += WINDOW_WIDTH
-
-			rl.DrawLineStrip(
-				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-				5,
-				PLAYER_COLOR,
-			)
-		} else if player.pos.x > WINDOW_WIDTH - (PLAYER_SCALE * 2) {
-			points[0].x -= WINDOW_WIDTH
-			points[1].x -= WINDOW_WIDTH
-			points[2].x -= WINDOW_WIDTH
-			points[3].x -= WINDOW_WIDTH
-
-			rl.DrawLineStrip(
-				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-				5,
-				PLAYER_COLOR,
-			)
+		points := generate_player_points(player)
+		for &point in points {
+			point.y += WINDOW_HEIGHT
 		}
+
+		points_slice := get_player_points(points)
+		rl.DrawLineStrip(raw_data(points_slice), 5, PLAYER_COLOR)
+
+		draw_player_wrapping_x(player, points)
+	} else if player.pos.y > WINDOW_HEIGHT - (PLAYER_SCALE * 2) {
+		points := generate_player_points(player)
+		for &point in points {
+			point.y -= WINDOW_HEIGHT
+		}
+
+		points_slice := get_player_points(points)
+		rl.DrawLineStrip(raw_data(points_slice), 5, PLAYER_COLOR)
+
+		draw_player_wrapping_x(player, points)
+	}
+}
+
+// Draws player sprite wrapping around the y-axis
+draw_player_wrapping_y :: proc(player: Player, points: [4]rl.Vector2) {	points := points
+	if player.pos.y < PLAYER_SCALE * 2 {
+		points := points
+		for &point in points {
+			point.y += WINDOW_HEIGHT
+		}
+
+		points_slice := get_player_points(points)
+		rl.DrawLineStrip(raw_data(points_slice), 5, PLAYER_COLOR)
 	} else if player.pos.y > WINDOW_HEIGHT - (PLAYER_SCALE * 2) {
 		points := points
-		points[0].y -= WINDOW_HEIGHT
-		points[1].y -= WINDOW_HEIGHT
-		points[2].y -= WINDOW_HEIGHT
-		points[3].y -= WINDOW_HEIGHT
-
-		rl.DrawLineStrip(
-			raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-			5,
-			PLAYER_COLOR,
-		)
-
-		if player.pos.x < PLAYER_SCALE * 2 {
-			points[0].x += WINDOW_WIDTH
-			points[1].x += WINDOW_WIDTH
-			points[2].x += WINDOW_WIDTH
-			points[3].x += WINDOW_WIDTH
-
-			rl.DrawLineStrip(
-				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-				5,
-				PLAYER_COLOR,
-			)
-		} else if player.pos.x > WINDOW_WIDTH - (PLAYER_SCALE * 2) {
-			points[0].x -= WINDOW_WIDTH
-			points[1].x -= WINDOW_WIDTH
-			points[2].x -= WINDOW_WIDTH
-			points[3].x -= WINDOW_WIDTH
-
-			rl.DrawLineStrip(
-				raw_data([]rl.Vector2{points[0], points[1], points[3], points[2], points[0]}),
-				5,
-				PLAYER_COLOR,
-			)
+		for &point in points {
+			point.y -= WINDOW_HEIGHT
 		}
+
+		points_slice := get_player_points(points)
+		rl.DrawLineStrip(raw_data(points_slice), 5, PLAYER_COLOR)
+	}
+}
+
+// Draws player sprite wrapping around the x-axis
+draw_player_wrapping_x :: proc(player: Player, points: [4]rl.Vector2) {
+	if player.pos.x < PLAYER_SCALE * 2 {
+		points := points
+		for &point in points {
+			point.x += WINDOW_WIDTH
+		}
+
+		points_slice := get_player_points(points)
+		rl.DrawLineStrip(raw_data(points_slice), 5, PLAYER_COLOR)
+	} else if player.pos.x > WINDOW_WIDTH - (PLAYER_SCALE * 2) {
+		points := points
+		for &point in points {
+			point.x -= WINDOW_WIDTH
+		}
+
+		points_slice := get_player_points(points)
+		rl.DrawLineStrip(raw_data(points_slice), 5, PLAYER_COLOR)
 	}
 }
 
@@ -535,6 +136,8 @@ draw_player_lives :: proc(player: Player) {
 		right.x += (PLAYER_WIDTH * PLAYER_SCALE) + 15
 		center.x += (PLAYER_WIDTH * PLAYER_SCALE) + 15
 
-		rl.DrawLineStrip(raw_data([]rl.Vector2{top, left, center, right, top}), 5, PLAYER_COLOR)
+		points_slice := []rl.Vector2{top, left, center, right, top}
+
+		rl.DrawLineStrip(raw_data(points_slice), 5, PLAYER_COLOR)
 	}
 }

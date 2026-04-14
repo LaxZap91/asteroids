@@ -10,7 +10,7 @@ BULLET_COLOR :: rl.WHITE
 // Size of the bullet sprite
 BULLET_SIZE :: 10
 // Maximum number of bullets
-BULLET_MAX :: 12
+BULLET_MAX :: 16
 
 Bullet :: struct {
 	using obj: Object,
@@ -18,9 +18,11 @@ Bullet :: struct {
 
 // Creates a bullet
 make_bullet :: proc(player: Player) -> Bullet {
-	pos :=
-		rl.Vector2Rotate(rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE, player.angle) +
-		player.pos
+	pos := rotate_shift_point(
+		rl.Vector2{0, -PLAYER_HEIGHT / 2} * PLAYER_SCALE,
+		player.angle,
+		player.pos,
+	)
 	vel := rl.Vector2Rotate({0, -1} * BULLET_SPEED, player.angle)
 	return {{pos, vel, player.angle}}
 }

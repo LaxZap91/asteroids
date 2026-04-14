@@ -1,13 +1,12 @@
 package asteroids
 
 import "core:math/rand"
-import "core:slice"
 import rl "vendor:raylib"
 
 // Minimum frames that particles last for
-PARTICLE_MIN_TIME :: 60
+PARTICLE_MIN_TIME :: 1 * TARGET_FPS
 // Maximum frames that particles last for
-PARTICLE_MAX_TIME :: 120
+PARTICLE_MAX_TIME :: 2 * TARGET_FPS
 // Minimum offset that particles spawn around radius
 PARTICLE_OFFSET_MIN :: -10
 // Maximum offset that particles spawn around radius
@@ -31,7 +30,7 @@ make_particle :: proc(obj_pos: rl.Vector2, radius: f32) -> Particle {
 	angle := rand.float32_range(0, 2 * rl.PI)
 	radius_offset := rand.float32_range(PARTICLE_OFFSET_MIN, PARTICLE_OFFSET_MAX)
 	speed := rand.float32_range(PARTICLE_SPEED_MIN, PARTICLE_SPEED_MAX)
-	pos := rl.Vector2Rotate(rl.Vector2{0, -1} * (radius + radius_offset), angle) + obj_pos
+	pos := rotate_shift_point(rl.Vector2{0, -1} * (radius + radius_offset), angle, obj_pos)
 	vel := rl.Vector2Rotate(rl.Vector2{0, -1} * speed, angle)
 	time := rand.uint_range(PARTICLE_MIN_TIME, PARTICLE_MAX_TIME)
 
@@ -58,15 +57,14 @@ update_particles :: proc(state: ^State) {
 	for &particle, index in state.particles {
 		particle.pos += particle.vel * state.dt
 		wrap_position(&particle)
-		particle.timer -= 1
 
+		particle.timer -= 1
 		if particle.timer == 0 {
 			append(&remove_indices, index)
 		}
 	}
 
-	slice.reverse(remove_indices[:])
-	for index in remove_indices {
+	#reverse for index in remove_indices {
 		unordered_remove(&state.particles, index)
 	}
 

@@ -9,3 +9,5 @@ The classic asteroids game, written in the odin programming language
 3. `odin run src`
 
 ## TODO
+
+- Try to make asteroid destruction particles move in direction of destruction bullet or new asteroids?

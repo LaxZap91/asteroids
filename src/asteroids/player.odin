@@ -12,7 +12,7 @@ PLAYER_SPEED_CAP :: PLAYER_SPEED * 45
 PLAYER_DEATH_DELAY :: 150
 // Frames before player can shoot again
 PLAYER_SHOOT_DELAY :: 5
-// maximum number of lives player can have
+// Maximum number of lives player can have
 PLAYER_MAX_LIVES :: 6
 // Number of particles spawned on player death
 PLAYER_PARTICLE_COUNT :: 30
@@ -22,7 +22,7 @@ PLAYER_SHIELD_TIME :: 5 * TARGET_FPS
 PLAYER_SHIELD_RADIUS :: PLAYER_SCALE * 6
 // Color of the player shield
 PLAYER_SHIELD_COLOR :: rl.WHITE
-// Size multiplication of the player spite
+// Scale of the player spite
 PLAYER_SCALE :: 20
 // Height of the player sprite
 PLAYER_HEIGHT :: 4

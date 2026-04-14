@@ -1,32 +1,30 @@
 package asteroids
 
-import "core:slice"
 import rl "vendor:raylib"
 
-// Checks if a bullets corners are inside of a given polygon
+// Checks if a bullet corners are inside of a given polygon
 check_poly_bullet_collision :: proc(points: [^]rl.Vector2, bullet: Bullet) -> bool {
-	return(
-		rl.CheckCollisionPointPoly(
-			{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
-			points,
-			11,
-		) ||
-		rl.CheckCollisionPointPoly(
-			{bullet.pos.x + (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
-			points,
-			11,
-		) ||
-		rl.CheckCollisionPointPoly(
-			{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y + (BULLET_SIZE / 2)},
-			points,
-			11,
-		) ||
-		rl.CheckCollisionPointPoly(
-			{bullet.pos.x + (BULLET_SIZE / 2), bullet.pos.y + (BULLET_SIZE / 2)},
-			points,
-			11,
-		) \
+	top_left_hit := rl.CheckCollisionPointPoly(
+		{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
+		points,
+		11,
 	)
+	top_right_hit := rl.CheckCollisionPointPoly(
+		{bullet.pos.x + (BULLET_SIZE / 2), bullet.pos.y - (BULLET_SIZE / 2)},
+		points,
+		11,
+	)
+	bottom_left_hit := rl.CheckCollisionPointPoly(
+		{bullet.pos.x - (BULLET_SIZE / 2), bullet.pos.y + (BULLET_SIZE / 2)},
+		points,
+		11,
+	)
+	bottom_right_hit := rl.CheckCollisionPointPoly(
+		{bullet.pos.x + (BULLET_SIZE / 2), bullet.pos.y + (BULLET_SIZE / 2)},
+		points,
+		11,
+	)
+	return top_left_hit || top_right_hit || bottom_left_hit || bottom_right_hit
 }
 
 // Checks if an asteroid is colliding with a bullet
@@ -39,9 +37,11 @@ check_asteroid_bullet_collision :: proc(
 ) {
 	asteroid := asteroid
 	for &point in asteroid.base_points {
-		point =
-			rl.Vector2Rotate(point * ASTEROID_SIZE_VALUE[asteroid.size], asteroid.angle) +
-			asteroid.pos
+		point = rotate_shift_point(
+			point * ASTEROID_SIZE_VALUE[asteroid.size],
+			asteroid.angle,
+			asteroid.pos,
+		)
 	}
 
 	points := raw_data(asteroid.base_points[:])
@@ -66,144 +66,128 @@ check_wrapped_asteroid_bullet_collision :: proc(
 	hit: bool,
 ) {
 	// Checks if asteroid is wrapping around x-axis
-	if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+	if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] {
 		wrapped_points := asteroid.base_points
 		for &point in wrapped_points {
-			point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
+			point.x += WINDOW_WIDTH
 		}
 
 		wrapped_points_raw := raw_data(wrapped_points[:])
-		if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+		collision :=
+			check_poly_bullet_collision(wrapped_points_raw, bullet) ||
+			check_wrapped_asteroid_bullet_collision_y(asteroid, bullet)
+		if collision {
 			hit = true
 			return
 		}
-
-		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
-			wrapped_points := asteroid.base_points
-			for &point in wrapped_points {
-				point = rl.Vector2{point.x, point.y + WINDOW_HEIGHT}
-			}
-
-			wrapped_points_raw := raw_data(wrapped_points[:])
-			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
-				hit = true
-				return
-			}
-		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
-			wrapped_points := asteroid.base_points
-			for &point in wrapped_points {
-				point = rl.Vector2{point.x, point.y - WINDOW_HEIGHT}
-			}
-
-			wrapped_points_raw := raw_data(wrapped_points[:])
-			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
-				hit = true
-				return
-			}
-		}
-	} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+	} else if asteroid.pos.x > WINDOW_WIDTH - ASTEROID_SIZE_VALUE[asteroid.size] {
 		wrapped_points := asteroid.base_points
 		for &point in wrapped_points {
-			point = rl.Vector2{point.x - WINDOW_WIDTH, point.y}
+			point.x -= WINDOW_WIDTH
 		}
 
 		wrapped_points_raw := raw_data(wrapped_points[:])
-		if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+		collision :=
+			check_poly_bullet_collision(wrapped_points_raw, bullet) ||
+			check_wrapped_asteroid_bullet_collision_y(asteroid, bullet)
+		if collision {
 			hit = true
 			return
-		}
-
-		if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
-			wrapped_points := asteroid.base_points
-			for &point in wrapped_points {
-				point = rl.Vector2{point.x, point.y + WINDOW_HEIGHT}
-			}
-
-			wrapped_points_raw := raw_data(wrapped_points[:])
-			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
-				hit = true
-				return
-			}
-		} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
-			wrapped_points := asteroid.base_points
-			for &point in wrapped_points {
-				point = rl.Vector2{point.x, point.y - WINDOW_HEIGHT}
-			}
-
-			wrapped_points_raw := raw_data(wrapped_points[:])
-			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
-				hit = true
-				return
-			}
 		}
 	}
 
 	// Checks if asteroid is wrapping around y-axis
-	if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
+	if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] {
 		wrapped_points := asteroid.base_points
 		for &point in wrapped_points {
-			point = rl.Vector2{point.x, point.y + WINDOW_HEIGHT}
+			point.y += WINDOW_HEIGHT
 		}
 
 		wrapped_points_raw := raw_data(wrapped_points[:])
-		if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+		collision :=
+			check_poly_bullet_collision(wrapped_points_raw, bullet) ||
+			check_wrapped_asteroid_bullet_collision_x(asteroid, bullet)
+		if collision {
 			hit = true
 			return
 		}
-
-		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
-			for &point in wrapped_points {
-				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
-			}
-
-			wrapped_points_raw := raw_data(wrapped_points[:])
-			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
-				hit = true
-				return
-			}
-		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
-			for &point in wrapped_points {
-				point = rl.Vector2{point.x - WINDOW_WIDTH, point.y}
-			}
-
-			wrapped_points_raw := raw_data(wrapped_points[:])
-			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
-				hit = true
-				return
-			}
-		}
-	} else if asteroid.pos.y > WINDOW_HEIGHT - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
+	} else if asteroid.pos.y > WINDOW_HEIGHT - ASTEROID_SIZE_VALUE[asteroid.size] {
 		wrapped_points := asteroid.base_points
 		for &point in wrapped_points {
-			point = rl.Vector2{point.x, point.y - WINDOW_HEIGHT}
+			point.y -= WINDOW_HEIGHT
 		}
 
 		wrapped_points_raw := raw_data(wrapped_points[:])
-		if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+		collision :=
+			check_poly_bullet_collision(wrapped_points_raw, bullet) ||
+			check_wrapped_asteroid_bullet_collision_x(asteroid, bullet)
+		if collision {
 			hit = true
 			return
 		}
+	}
 
-		if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] * 2 {
-			for &point in wrapped_points {
-				point = rl.Vector2{point.x + WINDOW_WIDTH, point.y}
-			}
+	return
+}
 
-			wrapped_points_raw := raw_data(wrapped_points[:])
-			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
-				hit = true
-				return
-			}
-		} else if asteroid.pos.x > WINDOW_WIDTH - (ASTEROID_SIZE_VALUE[asteroid.size] * 2) {
-			for &point in wrapped_points {
-				point = rl.Vector2{point.x - WINDOW_WIDTH, point.y}
-			}
+// Checks if a asteroid wrapped around y-axis is colliding with a bullet
+check_wrapped_asteroid_bullet_collision_y :: proc(
+	asteroid: Asteroid,
+	bullet: Bullet,
+) -> (
+	hit: bool,
+) {
+	if asteroid.pos.y < ASTEROID_SIZE_VALUE[asteroid.size] {
+		asteroid := asteroid
+		for &point in asteroid.base_points {
+			point.y += WINDOW_HEIGHT
+		}
 
-			wrapped_points_raw := raw_data(wrapped_points[:])
-			if check_poly_bullet_collision(wrapped_points_raw, bullet) {
-				hit = true
-				return
-			}
+		wrapped_points_raw := raw_data(asteroid.base_points[:])
+		if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+			hit = true
+		}
+	} else if asteroid.pos.y > WINDOW_HEIGHT - ASTEROID_SIZE_VALUE[asteroid.size] {
+		asteroid := asteroid
+		for &point in asteroid.base_points {
+			point.y -= WINDOW_HEIGHT
+		}
+
+		wrapped_points_raw := raw_data(asteroid.base_points[:])
+		if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+			hit = true
+		}
+	}
+
+	return
+}
+
+// Checks if a asteroid wrapped around x-axis is colliding with a bullet
+check_wrapped_asteroid_bullet_collision_x :: proc(
+	asteroid: Asteroid,
+	bullet: Bullet,
+) -> (
+	hit: bool,
+) {
+	if asteroid.pos.x < ASTEROID_SIZE_VALUE[asteroid.size] {
+		asteroid := asteroid
+		for &point in asteroid.base_points {
+			point.x += WINDOW_WIDTH
+		}
+
+		wrapped_points_raw := raw_data(asteroid.base_points[:])
+		if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+			hit = true
+		}
+	} else if asteroid.pos.x > WINDOW_WIDTH - ASTEROID_SIZE_VALUE[asteroid.size] {
+		asteroid := asteroid
+		for &point in asteroid.base_points {
+			point.x -= WINDOW_WIDTH
+		}
+
+		wrapped_points_raw := raw_data(asteroid.base_points[:])
+		if check_poly_bullet_collision(wrapped_points_raw, bullet) {
+			hit = true
 		}
 	}
 
@@ -236,8 +220,8 @@ update_asteroids :: proc(state: ^State, sounds: Sounds) {
 		}
 	}
 
-	slice.reverse(remove_indices[:])
-	for index in remove_indices {
+	// Removes destroyed asteroids
+	#reverse for index in remove_indices {
 		unordered_remove(&state.asteroids, index)
 	}
 }
