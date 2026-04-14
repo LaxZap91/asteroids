@@ -204,7 +204,8 @@ update_asteroids :: proc(state: ^State, sounds: Sounds) {
 		wrap_angle(&asteroid)
 		wrap_position(&asteroid)
 
-		if hit, bullet_index := check_asteroid_bullet_collision(asteroid, state.bullets[:]); hit {
+		hit, bullet_index := check_asteroid_bullet_collision(asteroid, state.bullets[:])
+		if hit {
 			unordered_remove(&state.bullets, bullet_index)
 			make_asteroid_particles(&state.particles, asteroid)
 			if asteroid.size != .Small {

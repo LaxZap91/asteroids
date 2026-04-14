@@ -30,7 +30,7 @@ draw_player :: proc(pos: rl.Vector2, angle: f32) {
 
 main :: proc() {
 	rl.SetTraceLogLevel(.WARNING)
-	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_UNDECORATED})
+	rl.SetConfigFlags({.WINDOW_HIDDEN})
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Asteroids")
 	rl.HideCursor()
 	defer rl.CloseWindow()

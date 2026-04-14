@@ -112,7 +112,11 @@ reset_game_respawn :: proc(state: ^State) {
 	state.stage_timer = STAGE_TIME
 
 	// Reduce score
-	state.score = max(0, state.score - PLAYER_DEATH_LOSS_POINTS)
+	if state.score > PLAYER_DEATH_LOSS_POINTS {
+		state.score -= PLAYER_DEATH_LOSS_POINTS
+	} else {
+		state.score = 0
+	}
 
 	// Resets player
 	state.player.pos = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2}

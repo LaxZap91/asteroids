@@ -1,6 +1,5 @@
 package asteroids
 
-import "core:fmt"
 import rl "vendor:raylib"
 
 // Draws asteroid sprites

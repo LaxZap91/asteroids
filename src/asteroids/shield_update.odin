@@ -63,8 +63,8 @@ check_wrapped_shield_asteroid_collision :: proc(
 	// Checks if asteroid is wrapping around x-axis
 	if player.pos.x < PLAYER_SHIELD_RADIUS {
 		points := points
-		for &point in points {
-			point.x += WINDOW_WIDTH
+		for &player_point in points {
+			player_point.x += WINDOW_WIDTH
 		}
 
 		points_slice := get_shield_points(points)
@@ -77,8 +77,8 @@ check_wrapped_shield_asteroid_collision :: proc(
 		}
 	} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
 		points := points
-		for &point in points {
-			point.x -= WINDOW_WIDTH
+		for &player_point in points {
+			player_point.x -= WINDOW_WIDTH
 		}
 
 		points_slice := get_shield_points(points)
@@ -94,8 +94,8 @@ check_wrapped_shield_asteroid_collision :: proc(
 	// Checks if asteroid is wrapping around y-axis
 	if player.pos.y < PLAYER_SHIELD_RADIUS {
 		points := points
-		for &point in points {
-			point.y += WINDOW_HEIGHT
+		for &player_point in points {
+			player_point.y += WINDOW_HEIGHT
 		}
 
 		points_slice := get_shield_points(points)
@@ -108,8 +108,8 @@ check_wrapped_shield_asteroid_collision :: proc(
 		}
 	} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
 		points := points
-		for &point in points {
-			point.y -= WINDOW_HEIGHT
+		for &player_point in points {
+			player_point.y -= WINDOW_HEIGHT
 		}
 
 		points_slice := get_shield_points(points)
@@ -135,8 +135,8 @@ check_wrapped_shield_asteroid_collision_y :: proc(
 ) {
 	points := points
 	if player.pos.y < PLAYER_SHIELD_RADIUS {
-		for &point in points {
-			point.y += WINDOW_HEIGHT
+		for &player_point in points {
+			player_point.y += WINDOW_HEIGHT
 		}
 
 		points_slice := get_shield_points(points)
@@ -144,8 +144,8 @@ check_wrapped_shield_asteroid_collision_y :: proc(
 			hit = true
 		}
 	} else if player.pos.y > WINDOW_HEIGHT - PLAYER_SHIELD_RADIUS {
-		for &point in points {
-			point.y -= WINDOW_HEIGHT
+		for &player_point in points {
+			player_point.y -= WINDOW_HEIGHT
 		}
 
 		points_slice := get_shield_points(points)
@@ -167,8 +167,8 @@ check_wrapped_shield_asteroid_collision_x :: proc(
 ) {
 	points := points
 	if player.pos.x < PLAYER_SHIELD_RADIUS {
-		for &point in points {
-			point.x += WINDOW_WIDTH
+		for &player_point in points {
+			player_point.x += WINDOW_WIDTH
 		}
 
 		points_slice := get_shield_points(points)
@@ -176,8 +176,8 @@ check_wrapped_shield_asteroid_collision_x :: proc(
 			hit = true
 		}
 	} else if player.pos.x > WINDOW_WIDTH - PLAYER_SHIELD_RADIUS {
-		for &point in points {
-			point.x -= WINDOW_WIDTH
+		for &player_point in points {
+			player_point.x -= WINDOW_WIDTH
 		}
 
 		points_slice := get_shield_points(points)

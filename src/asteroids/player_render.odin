@@ -5,10 +5,12 @@ import rl "vendor:raylib"
 // Gets the player rendering points in rendering order
 get_player_points :: proc(points: [4]rl.Vector2) -> []rl.Vector2 {
 	points_slice := make([]rl.Vector2, 5, context.temp_allocator)
-	points_wrapped: [5]rl.Vector2
 
-	points_wrapped = swizzle(points, 0, 1, 3, 2, 0)
-	points_slice = points_wrapped[:]
+	points_slice[0] = points[0]
+	points_slice[1] = points[1]
+	points_slice[2] = points[3]
+	points_slice[3] = points[2]
+	points_slice[4] = points[0]
 
 	return points_slice
 }
@@ -80,7 +82,7 @@ draw_player_wrapping :: proc(player: Player) {
 }
 
 // Draws player sprite wrapping around the y-axis
-draw_player_wrapping_y :: proc(player: Player, points: [4]rl.Vector2) {	points := points
+draw_player_wrapping_y :: proc(player: Player, points: [4]rl.Vector2) {points := points
 	if player.pos.y < PLAYER_SCALE * 2 {
 		points := points
 		for &point in points {

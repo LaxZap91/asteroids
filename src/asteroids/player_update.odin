@@ -64,7 +64,12 @@ generate_player_collision_points :: proc(player: Player) -> [6]rl.Vector2 {
 }
 
 // Checks if the player points are in an asteroid
-check_point_poly_collision :: proc(player_points: [6]rl.Vector2, points: [^]rl.Vector2) -> (hit: bool) {
+check_point_poly_collision :: proc(
+	player_points: [6]rl.Vector2,
+	points: [^]rl.Vector2,
+) -> (
+	hit: bool,
+) {
 	for point in player_points {
 		if rl.CheckCollisionPointPoly(point, points, 11) {
 			hit = true
@@ -258,7 +263,10 @@ update_player :: proc(state: ^State, sounds: Sounds) {
 	if state.player.state == .Alive {
 		// Player input
 		if rl.IsKeyDown(.UP) {
-			state.player.vel += rl.Vector2Rotate(rl.Vector2{0, -1} * PLAYER_SPEED, state.player.angle)
+			state.player.vel += rl.Vector2Rotate(
+				rl.Vector2{0, -1} * PLAYER_SPEED,
+				state.player.angle,
+			)
 		}
 		if rl.IsKeyDown(.LEFT) {
 			state.player.angle -= PLAYER_ROTATION_AMOUNT
